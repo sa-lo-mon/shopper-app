@@ -69,6 +69,7 @@ MongoAccessLayer.prototype.getCollection = function (collectionName, query, call
                         console.log('error in get collection', err.message);
                         callback(err, null);
                     } else {
+                        console.log('items: ', items);
                         callback(null, items);
                     }
                 });

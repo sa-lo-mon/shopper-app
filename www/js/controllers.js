@@ -1,4 +1,4 @@
-var appControllers = angular.module('starter.controllers');
+var appControllers = angular.module('starter.controllers', []);
 
 appControllers.controller('DashCtrl', function ($scope, UserService) {
     console.log('dash control. isLoggedIn = ', UserService.model.isLoggedIn);
@@ -41,38 +41,27 @@ appControllers.controller('LoginCtrl', function ($state, $scope, $http, $ionicPo
      xfbml: true
      });
      */
-    console.log('login cntrl = ', UserService.model.isLoggedIn);
     $scope.loginData = {};
 
     $scope.doLogin = function () {
-        console.log('Doing login', $scope.loginData);
-        if ($scope.loginData.username && $scope.loginData.password) {
-            UserService.model.isLoggedIn = true;
-            console.log('loggedIn = ', UserService.model.isLoggedIn);
-
-            $state.go('tab.dash');
-
+        if ($scope.loginData.email && $scope.loginData.password) {
+            $http.post('/login', $scope.loginData)
+                .success(function (data) {
+                    UserService.loginRedirect(data);
+                })
+                .error(function (data) {
+                    $ionicPopup.alert({
+                        title: 'Login failed!',
+                        template: 'Please check your credentials!'
+                    });
+                });
         } else {
 
-            var alertResult = $ionicPopup.alert({
+            $ionicPopup.alert({
                 title: 'Login failed!',
                 template: 'Please check your credentials!'
             });
         }
-    };
-
-    $scope.sub = function () {
-        console.log('form data: ', $scope.loginData);
-
-        $http.post('/login', $scope.loginData)
-            .success(function (data) {
-                UserService.loginRedirect(data);
-            })
-            .error(function (data) {
-                console.error('error in posting ', data);
-
-                //TODO: show error message
-            });
     };
 
     $scope.logout = function () {
@@ -93,6 +82,7 @@ appControllers.controller('LoginCtrl', function ($state, $scope, $http, $ionicPo
 
 appControllers.controller('RegisterCtrl', function ($scope, $http, $state) {
     $scope.formData = {};
+
     $scope.sub = function () {
         console.log('form data: ', $scope.formData);
         $http.post('/register/complete', $scope.formData)
@@ -110,32 +100,30 @@ appControllers.controller('RegisterCtrl', function ($scope, $http, $state) {
     }
 });
 
-appControllers.controller('CategoriesCtrl', function ($scope, $http, $state, UserService) {
+appControllers.controller('CategoriesCtrl', function ($scope, $http, $state, $ionicPopup, UserService, Categories) {
     $scope.user = UserService;
-    $scope.categories = [
-        {Id: '1', Name: 'cat 1', checked: false, icon: ''},
-        {Id: '2', Name: 'cat 2', checked: false, icon: ''},
-        {Id: '3', Name: 'cat 3', checked: false, icon: ''}
-    ];
-    /*
-     $http.get('/categories')
-     .success(function (categories) {
-     $scope.categories = categories.data;
-     })
-     .error(function (err) {
-     console.error('error in getting categories: ', err);
 
-     //TODO: show error message to user
-     });
-     */
+    $scope.categories = [];
     $scope.userCategories = [];
+
+    Categories.all().then(function (data, err) {
+        if (err) {
+            $ionicPopup.alert({
+                title: 'Categories failed!',
+                template: err
+            });
+        } else {
+            $scope.categories = data;
+            console.log('categories: ', $scope.categories);
+        }
+    });
 
     $scope.getCategories = function () {
         return $scope.userCategories;
     };
 
     $scope.check = function (value, checked) {
-        console.log('value: %s, checked: %s', value, checked);
+
         var idx = $scope.userCategories.indexOf(value);
 
         if (idx >= 0 && !checked) {
@@ -148,6 +136,9 @@ appControllers.controller('CategoriesCtrl', function ($scope, $http, $state, Use
     };
 
     $scope.sub = function () {
+        if(!$scope.user.model.email){
+            $scope.user.restoreState();
+        }
         var params = {
             email: $scope.user.model.email,
             categories: $scope.userCategories
@@ -169,19 +160,19 @@ appControllers.controller('CategoriesCtrl', function ($scope, $http, $state, Use
     };
 });
 
-appControllers.controller('MainCtrl', function ($scope, $http, UserService) {
-
-//TODO: implement this!
-
-});
-
 appControllers.controller('SalesCtrl', function ($scope, $http, UserService) {
 
 //TODO: implement this!
 
 });
 
-appControllers.controller('MallCtrl', function ($scope, $http, UserService) {
+appControllers.controller('MySalesCtrl', function ($scope, $http, UserService) {
+
+//TODO: implement this!
+
+});
+
+appControllers.controller('MallsCtrl', function ($scope, $http, UserService) {
 
 //TODO: implement this!
 

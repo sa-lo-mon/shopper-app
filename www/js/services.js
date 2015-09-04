@@ -1,55 +1,72 @@
 var appServices = angular.module('starter.services', []);
 
 appServices.factory('Chats', function () {
-        // Might use a resource here that returns a JSON array
+    // Might use a resource here that returns a JSON array
 
-        // Some fake testing data
-        var chats = [{
-            id: 0,
-            name: 'Ben Sparrow',
-            lastText: 'You on your way?',
-            face: 'https://pbs.twimg.com/profile_images/514549811765211136/9SgAuHeY.png'
-        }, {
-            id: 1,
-            name: 'Max Lynx',
-            lastText: 'Hey, it\'s me',
-            face: 'https://avatars3.githubusercontent.com/u/11214?v=3&s=460'
-        }, {
-            id: 2,
-            name: 'Adam Bradleyson',
-            lastText: 'I should buy a boat',
-            face: 'https://pbs.twimg.com/profile_images/479090794058379264/84TKj_qa.jpeg'
-        }, {
-            id: 3,
-            name: 'Perry Governor',
-            lastText: 'Look at my mukluks!',
-            face: 'https://pbs.twimg.com/profile_images/598205061232103424/3j5HUXMY.png'
-        }, {
-            id: 4,
-            name: 'Mike Harrington',
-            lastText: 'This is wicked good ice cream.',
-            face: 'https://pbs.twimg.com/profile_images/578237281384841216/R3ae1n61.png'
-        }];
+    // Some fake testing data
+    var chats = [{
+        id: 0,
+        name: 'Ben Sparrow',
+        lastText: 'You on your way?',
+        face: 'https://pbs.twimg.com/profile_images/514549811765211136/9SgAuHeY.png'
+    }, {
+        id: 1,
+        name: 'Max Lynx',
+        lastText: 'Hey, it\'s me',
+        face: 'https://avatars3.githubusercontent.com/u/11214?v=3&s=460'
+    }, {
+        id: 2,
+        name: 'Adam Bradleyson',
+        lastText: 'I should buy a boat',
+        face: 'https://pbs.twimg.com/profile_images/479090794058379264/84TKj_qa.jpeg'
+    }, {
+        id: 3,
+        name: 'Perry Governor',
+        lastText: 'Look at my mukluks!',
+        face: 'https://pbs.twimg.com/profile_images/598205061232103424/3j5HUXMY.png'
+    }, {
+        id: 4,
+        name: 'Mike Harrington',
+        lastText: 'This is wicked good ice cream.',
+        face: 'https://pbs.twimg.com/profile_images/578237281384841216/R3ae1n61.png'
+    }];
 
-        return {
-            all: function () {
-                return chats;
-            },
-            remove: function (chat) {
-                chats.splice(chats.indexOf(chat), 1);
-            },
-            get: function (chatId) {
-                for (var i = 0; i < chats.length; i++) {
-                    if (chats[i].id === parseInt(chatId)) {
-                        return chats[i];
-                    }
+    return {
+        all: function () {
+            return chats;
+        },
+        remove: function (chat) {
+            chats.splice(chats.indexOf(chat), 1);
+        },
+        get: function (chatId) {
+            for (var i = 0; i < chats.length; i++) {
+                if (chats[i].id === parseInt(chatId)) {
+                    return chats[i];
                 }
-                return null;
             }
-        };
-    });
+            return null;
+        }
+    };
+});
 
-appServices.factory('UserService', function ($rootScope, $http, $location) {
+appServices.factory('Categories', function ($http, $q) {
+    return {
+        all: function () {
+            var dfd = $q.defer();
+            $http.get('/categories')
+                .success(function (categories) {
+                    dfd.resolve(categories.data);
+                })
+                .error(function (err) {
+                    dfd.reject(err);
+                });
+
+            return dfd.promise;
+        }
+    };
+});
+
+appServices.factory('UserService', function ($rootScope, $http, $state, $ionicPopup) {
     var service = {
         model: {
             name: '',
@@ -106,7 +123,11 @@ appServices.factory('UserService', function ($rootScope, $http, $location) {
         loginRedirect: function (data) {
             var _self = this;
             if (!data || !data.data) {
-                $location.path('/login');
+
+                $ionicPopup.alert({
+                    title: 'Login failed!',
+                    template: 'Please check your credentials!'
+                });
                 return;
             }
 
@@ -114,20 +135,19 @@ appServices.factory('UserService', function ($rootScope, $http, $location) {
             _self.model.name = data.data.FirstName || data.data.data.FirstName;
             _self.model.isLoggedIn = true;
             _self.saveState();
-
-            var path = '/login';
+            var path = 'login';
             var userCategories = data.data.Categories || data.data.data.Categories;
             if (userCategories && userCategories.length > 0) {
 
                 //redirect to "main" page!
-                path = '/main';
+                path = 'tab.sales';
             } else {
 
                 //redirect to "categories" page!
-                path = '/categories';
+                path = 'categories';
             }
-
-            $location.path(path);
+            console.log('---6');
+            $state.go(path);
         }
     };
 

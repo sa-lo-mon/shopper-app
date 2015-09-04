@@ -14,6 +14,7 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static(__dirname + '/www'));
 
 app.post('/login', function (req, res) {
+
     if (req.body.password && req.body.email) {
         console.log('login 1');
         var loginInput = {
@@ -41,6 +42,22 @@ app.post('/login', function (req, res) {
         console.log('login 5');
         res.json({success: false, data: null, message: "Invalid Request!"});
     }
+});
+
+app.post('/categories/complete', function (req, res) {
+    var cariteria = {
+        condition: {email: req.body.email},
+        setValues: {Categories: req.body.categories}
+    };
+
+    mongoAccessLayer.updateDocument("users", cariteria, function (err, data) {
+        if (err) {
+            res.json({success: false, data: null, message: err.message});
+
+        } else {
+            res.json({success: true, data: data, message: null});
+        }
+    });
 });
 
 app.post('/register/complete', function (req, res) {
@@ -112,6 +129,16 @@ app.get('/user/:id/:accessToken', function (req, res) {
     }
 });
 
+app.get('/categories', function (req, res) {
+    mongoAccessLayer.getCollection('categories', {}, function (err, data) {
+        if (err) {
+            res.json({success: false, data: null, message: err.message});
+        }
+        else {
+            res.json({success: true, data: data, message: null});
+        }
+    })
+});
 var port = process.env.PORT || 8000;
 var server = app.listen(port, function () {
     var host = server.address().address;

@@ -112,16 +112,6 @@ app.config(function ($stateProvider, $urlRouterProvider) {
             }
         })
 
-        .state('tab.account', {
-            url: '/account',
-            views: {
-                'tab-account': {
-                    templateUrl: 'templates/tab-account.html',
-                    controller: 'AccountCtrl'
-                }
-            }
-        })
-
         .state('tab.logout', {
             url: '/logout',
             views: {
@@ -132,32 +122,32 @@ app.config(function ($stateProvider, $urlRouterProvider) {
             }
         })
 
-        .state('tab.sales-general', {
-            url: '/sales/general',
+        .state('tab.sales', {
+            url: '/sales',
             views: {
-                'tab-sales-general': {
-                    templateUrl: 'templates/sales.html',
+                'tab-sales': {
+                    templateUrl: 'templates/tab-sales.html',
                     controller: 'SalesCtrl'
                 }
             }
         })
 
-        .state('tab.sales-private', {
-            url: '/sales/private',
+        .state('tab.my-sales', {
+            url: '/my-sales',
             views: {
-                'tab-sales-private': {
-                    templateUrl: 'templates/sales.html',
-                    controller: 'SalesCtrl'
+                'tab-my-sales': {
+                    templateUrl: 'templates/tab-my-sales.html',
+                    controller: 'MySalesCtrl'
                 }
             }
         })
 
-        .state('tab.mall-map', {
-            url: '/mall/map',
+        .state('tab.malls', {
+            url: '/malls',
             views: {
-                'tab-mall-map': {
-                    templateUrl: 'templates/mall.html',
-                    controller: 'MallCtrl'
+                'tab-malls': {
+                    templateUrl: 'templates/tab-malls.html',
+                    controller: 'MallsCtrl'
                 }
             }
         });
@@ -166,15 +156,18 @@ app.config(function ($stateProvider, $urlRouterProvider) {
     $urlRouterProvider.otherwise('/login');
 });
 
+
 app.config(function ($httpProvider) {
     $httpProvider.interceptors.push(function ($q) {
         return {
             'request': function (config) {
                 var url = config.url;
 
-                //if url doesn't contains '.html'
+                //if url doesn't contain '.html'
                 if (url.indexOf('.html') == -1) {
-                    config.url = 'https://shopper-server.herokuapp.com' + config.url;
+                    //var server = 'https://shopper-server.herokuapp.com';
+                    var localhost = 'http://localhost:8000';
+                    config.url = localhost + config.url;
                     console.log('config url: ', config.url);
                 }
 
