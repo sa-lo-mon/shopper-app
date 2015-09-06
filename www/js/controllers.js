@@ -2,12 +2,14 @@ var appControllers = angular.module('starter.controllers', []);
 
 appControllers.controller('AppCtrl', function ($state, $scope, $ionicPopup, AuthService, UserService, AUTH_EVENTS) {
     $scope.username = AuthService.userName();
+
     $scope.$on(AUTH_EVENTS.notAuthorized, function (event) {
         var alertPopup = $ionicPopup.alert({
             title: 'Unauthorized',
             template: 'You are not allowed to access this resource'
         });
     });
+
     $scope.$on(AUTH_EVENTS.notAuthenticated, function (event) {
         AuthService.logout();
         $state.go('login');
@@ -38,10 +40,9 @@ appControllers.controller('Login2Ctrl', function ($state, $scope, $ionicPopup, A
     }
 });
 
-
 appControllers.controller('DashCtrl', function ($state, $scope, $ionicPopup, $http, AuthService) {
     console.log('dash control. isLoggedIn = ', UserService.model.isLoggedIn);
-    
+
     $scope.logout = function () {
         AuthService.logout();
         $state.go('login');
@@ -75,18 +76,8 @@ appControllers.controller('AccountCtrl', function ($scope) {
     };
 });
 
-appControllers.controller('LoginCtrl', function ($state, $scope, $http, $ionicPopup, UserService) {
+appControllers.controller('LoginCtrl', function ($state, $scope, $http, $ionicPopup, AuthService) {
 
-    //init facebook sdk
-    /*
-     FB.init({
-     appId: '421262201393188',
-     channelUrl: 'app/channel.html',
-     status: true,
-     cookie: true,
-     xfbml: true
-     });
-     */
     $scope.loginData = {};
 
     $scope.doLogin = function () {
@@ -110,7 +101,15 @@ appControllers.controller('LoginCtrl', function ($state, $scope, $http, $ionicPo
         }
     };
 
+    $scope.login = function (data, type) {
+        AuthService.login(data, type);
+    };
+
     $scope.logout = function () {
+        AuthService.logout();
+    };
+
+    function logout2() {
 
         UserService.logout();
 
@@ -222,4 +221,18 @@ appControllers.controller('MallsCtrl', function ($scope, $http, UserService) {
 
 //TODO: implement this!
 
+});
+
+
+// Dashboard/Profile Controller
+appControllers.controller('DashboardCtrl', function ($scope, $window, $state, $cookieStore) {
+    // Set user details
+    $scope.user = $cookieStore.get('userInfo');
+
+    // Logout user
+    $scope.logout = function () {
+        $cookieStore.remove("userInfo");
+        $state.go('welcome');
+        $window.location.reload();
+    };
 });

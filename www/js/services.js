@@ -102,7 +102,7 @@ appServices.factory('UserService', function ($rootScope, $http, $state, $ionicPo
             var _self = this;
             $rootScope.$apply(function () {
 
-                $http.get('/login' + '/' + userID + '/' + token)
+                $http.get('/user' + '/' + userID + '/' + token)
                     .success(function (data) {
                         _self.loginRedirect(data);
                     })
@@ -157,7 +157,7 @@ appServices.factory('UserService', function ($rootScope, $http, $state, $ionicPo
     return service;
 });
 
-appServices.service('AuthService', function ($q, $http, USER_ROLES) {
+appServices.service('AuthService', function ($q, $http, USER_ROLES, LOGIN_TYPE, AUTH_EVENTS) {
     var LOCAL_TOKEN_KEY = 'tokenKey';
     var userName = '';
     var isAuthenticated = false;
@@ -171,28 +171,45 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES) {
         }
     };
 
-    function isValidUser(userName, pw) {
-        var params = {username: userName, password: pw};
-
+    function isValidUser(loginData) {
         return $q(function (resolve, reject) {
-
-            //Get user credentials from database
-            $http.post('/login', params)
-                .success(function (data) {
-                    resolve(data);
-                })
-                .error(function (err) {
-                    reject(err);
-                });
+            if (loginData.username && loginData.password) {
+                //Get user credentials from database
+                $http.post('/login', loginData)
+                    .success(function (data) {
+                        resolve(data);
+                    })
+                    .error(function (err) {
+                        reject(err);
+                    });
+            } else {
+                reject('Invalid Login Details.');
+            }
         });
     }
 
     function storeUserCredentials(token) {
+        console.log(token);
+        /* var user = {};
+         user.name = response.name;
+         user.email = response.email;
+         if (response.gender) {
+         response.gender.toString().toLowerCase() === 'male' ? user.gender = 'M' : user.gender = 'F';
+         } else {
+         user.gender = '';
+         }
+         user.profilePic = picResponse.data.url;
+
+         window.localStorage.setItem('userInfo', user);
+
+         console.log('user.profilePic: ', user.profilePic);
+         */
         window.localStorage.setItem(LOCAL_TOKEN_KEY, token);
         useCredentials(token);
     };
 
     function useCredentials(token) {
+        console.log('useCredentials');
         userName = token.split('.')[0];
         isAuthenticated = true;
         authToken = token;
@@ -200,27 +217,15 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES) {
         if (userName == 'admin') {
             role = USER_ROLES.admin;
 
-        } else if (userName == 'user') {
+        }/* else if (userName == 'user') {
+         role = USER_ROLES.public;
+         }*/
+        else {
+            console.log('public role');
             role = USER_ROLES.public;
         }
 
         $http.defults.headers.common['X-Auth-Token'] = token;
-    };
-
-    var login = function (name, pw) {
-
-        return $q(function (resolve, reject) {
-            isValidUser(name, pw)
-                .success(function (data) {
-                    console.log('data: ', data);
-                    storeUserCredentials(name + '.ServerTokenKey');
-                    resolve('Login success.');
-                })
-                .error(function (err) {
-                    console.log('err: ', err);
-                    reject('Login failed.');
-                });
-        })
     };
 
     function destroyCredentials() {
@@ -232,6 +237,36 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES) {
         window.localStorage.removeItem(LOCAL_TOKEN_KEY);
     }
 
+    function loginRedirect(data) {
+        var _self = this;
+        if (!data || !data.data) {
+
+            $ionicPopup.alert({
+                title: 'Login failed!',
+                template: 'Please check your credentials!'
+            });
+            return;
+        }
+
+        _self.model.email = data.data.email || data.data.data.email;
+        _self.model.name = data.data.FirstName || data.data.data.FirstName;
+        _self.model.isLoggedIn = true;
+        _self.saveState();
+        var path = 'login';
+        var userCategories = data.data.Categories || data.data.data.Categories;
+        if (userCategories && userCategories.length > 0) {
+
+            //redirect to "main" page!
+            path = 'tab.sales';
+        } else {
+
+            //redirect to "categories" page!
+            path = 'categories';
+        }
+        console.log('---6');
+        $state.go(path);
+    }
+
     var isAuthorized = function (authorizedRoles) {
         if (!angular.isArray(authorizedRoles)) {
             authorizedRoles = [authorizedRoles];
@@ -239,12 +274,76 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES) {
 
         return (isAuthenticated && authorizedRoles.indexf(role) != -1);
     };
+
+
+    function getUserInfo() {
+        return $q(function (resolve, reject) {
+
+            // get basic info
+            FB.api('/me', function (response, err) {
+
+                if (err) {
+                    reject(err);
+
+                } else {
+
+                    // store data to DB - Call to API
+                    // Todo
+                    // After posting user data to server successfully store user data locally
+                    resolve(response);
+                }
+            });
+        });
+    }
+
+    // FB Login
+    var facebookLogin = function () {
+        return $q(function (resolve, reject) {
+            FB.login(function (response) {
+                if (response.authResponse) {
+                    resolve(getUserInfo());
+                } else {
+                    reject('User cancelled login or did not fully authorize.');
+                }
+            }, {scope: 'email, public_profile'});
+        });
+    };
+    // END FB Login
+
+    var defaultLogin = function (loginData) {
+        return isValidUser(loginData);
+    };
+
+    var loginHandler = function (loginData, loginType) {
+        if (loginType == LOGIN_TYPE.facebook) {
+            return facebookLogin();
+
+        } else if (loginType == LOGIN_TYPE.default) {
+            return defaultLogin(loginData);
+
+        } else {
+            return $q.defer().reject();
+        }
+    };
+
+    var login = function (loginData, loginType) {
+        loginHandler(loginData, loginType).then(function (data, err) {
+            if (err) {
+                console.log('login error: ', err);
+                $rootScope.broadcost(AUTH_EVENTS.notAuthorized);
+
+            } else {
+                storeUserCredentials(data);
+            }
+        });
+    };
+
     var logout = function () {
         destroyCredentials();
     };
 
-
     loadUserCredentials();
+
     return {
         login: login,
         logout: logout,

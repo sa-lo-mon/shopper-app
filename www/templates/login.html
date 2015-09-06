@@ -1,24 +1,35 @@
 <!--<fb:login-button scope="public_profile,email" auto_logout_link="true"></fb:login-button>-->
 
 <ion-view view-title="Login">
-  <ion-content class="padding">
-    <form ng-submit="doLogin()">
-      <div class="list">
-        <label class="item item-input">
-          <span class="input-label">Username</span>
-          <input type="text" ng-model="loginData.email">
-        </label>
-        <label class="item item-input">
-          <span class="input-label">Password</span>
-          <input type="password" ng-model="loginData.password">
-        </label>
-        <label class="item">
-          <button class="button button-block button-positive" type="submit">Log in</button>
-        </label>
-        <label class="item">
-          <button ui-sref="register" class="button icon-right ion-plus-round">Register</button>
-        </label>
-      </div>
-    </form>
-  </ion-content>
+    <ion-content class="padding">
+        <form ng-submit="login(loginData,'default')">
+            <div class="list">
+                <label class="item item-input">
+                    <span class="input-label">Username</span>
+                    <input type="text" ng-model="loginData.email">
+                </label>
+                <label class="item item-input">
+                    <span class="input-label">Password</span>
+                    <input type="password" ng-model="loginData.password">
+                </label>
+                <label class="item">
+                    <button class="button button-block button-positive" type="submit">Log in</button>
+                </label>
+                <label class="item">
+                    <button ui-sref="register" class="button icon-right ion-plus-round">Register</button>
+                </label>
+                <hr id="login-divider"/>
+                <div id="social-links">
+                    <ul>
+                        <li ng-click="login(loginData,'facebook')">
+              <span class="ifacebook">
+                <img src="img/social-icons/facebook.png">
+              </span>
+                            <a href="#" class="afacebook">sign in with facebook</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </form>
+    </ion-content>
 </ion-view>
