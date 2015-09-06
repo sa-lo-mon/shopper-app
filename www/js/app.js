@@ -1,5 +1,15 @@
 var app = angular.module('starter', ['ionic', 'starter.controllers', 'starter.services']);
 
+app.constans('AUTH_EVENTS',{
+    notAuthenticated:'auth-not-authenticated',
+    notAuthorized:'auth-not-authorized'
+});
+
+app.constans('USER_ROLES',{
+    admin:'role-admin',
+    public:'role-public'
+});
+
 app.run(function ($ionicPlatform, $window, UserService) {
 
     $ionicPlatform.ready(function () {

@@ -156,3 +156,120 @@ appServices.factory('UserService', function ($rootScope, $http, $state, $ionicPo
 
     return service;
 });
+
+appServices.service('AuthService', function ($q, $http, USER_ROLES) {
+    var LOCAL_TOKEN_KEY = 'tokenKey';
+    var userName = '';
+    var isAuthenticated = false;
+    var role = '';
+    var authToken;
+
+    function loadUserCredentials() {
+        var token = window.localStorage.getItem(LOCAL_TOKEN_KEY);
+        if (token) {
+            useCredentials(token);
+        }
+    };
+
+    function isValidUser(userName, pw) {
+        var params = {username: userName, password: pw};
+
+        return $q(function (resolve, reject) {
+
+            //Get user credentials from database
+            $http.post('/login', params)
+                .success(function (data) {
+                    resolve(data);
+                })
+                .error(function (err) {
+                    reject(err);
+                });
+        });
+    }
+
+    function storeUserCredentials(token) {
+        window.localStorage.setItem(LOCAL_TOKEN_KEY, token);
+        useCredentials(token);
+    };
+
+    function useCredentials(token) {
+        userName = token.split('.')[0];
+        isAuthenticated = true;
+        authToken = token;
+
+        if (userName == 'admin') {
+            role = USER_ROLES.admin;
+
+        } else if (userName == 'user') {
+            role = USER_ROLES.public;
+        }
+
+        $http.defults.headers.common['X-Auth-Token'] = token;
+    };
+
+    var login = function (name, pw) {
+
+        return $q(function (resolve, reject) {
+            isValidUser(name, pw)
+                .success(function (data) {
+                    console.log('data: ', data);
+                    storeUserCredentials(name + '.ServerTokenKey');
+                    resolve('Login success.');
+                })
+                .error(function (err) {
+                    console.log('err: ', err);
+                    reject('Login failed.');
+                });
+        })
+    };
+
+    function destroyCredentials() {
+        var userName = '';
+        var isAuthenticated = false;
+        var role = '';
+        var authToken = undefined;
+        $http.defults.headers.common['X-Auth-Token'] = undefined;
+        window.localStorage.removeItem(LOCAL_TOKEN_KEY);
+    }
+
+    var isAuthorized = function (authorizedRoles) {
+        if (!angular.isArray(authorizedRoles)) {
+            authorizedRoles = [authorizedRoles];
+        }
+
+        return (isAuthenticated && authorizedRoles.indexf(role) != -1);
+    };
+    var logout = function () {
+        destroyCredentials();
+    };
+
+
+    loadUserCredentials();
+    return {
+        login: login,
+        logout: logout,
+        isAuthorized: isAuthorized,
+        isAuthenticated: function () {
+            return isAuthenticated;
+        },
+        userName: function () {
+            return userName;
+        },
+        role: function () {
+            return role;
+        }
+    };
+});
+
+appServices.factory('AuthInterceptor', function ($rootScope, $q, AUTH_EVENTS) {
+    return {
+        responseError: function (response) {
+            $rootScope.$broadcast({
+                401: AUTH_EVENTS.notAuthenticated,
+                403: AUTH_EVENTS.notAuthorized
+            }[response.status], response);
+            return $q.reject(response);
+        }
+    };
+
+});

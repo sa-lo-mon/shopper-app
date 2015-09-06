@@ -1,7 +1,53 @@
 var appControllers = angular.module('starter.controllers', []);
 
-appControllers.controller('DashCtrl', function ($scope, UserService) {
+appControllers.controller('AppCtrl', function ($state, $scope, $ionicPopup, AuthService, UserService, AUTH_EVENTS) {
+    $scope.username = AuthService.userName();
+    $scope.$on(AUTH_EVENTS.notAuthorized, function (event) {
+        var alertPopup = $ionicPopup.alert({
+            title: 'Unauthorized',
+            template: 'You are not allowed to access this resource'
+        });
+    });
+    $scope.$on(AUTH_EVENTS.notAuthenticated, function (event) {
+        AuthService.logout();
+        $state.go('login');
+        var alertPopup = $ionicPopup.alert({
+            title: 'Session lost!',
+            template: 'Please login again.'
+        });
+    });
+
+    $scope.SetCurrentUsername = function (name) {
+        $scope.username = name;
+    }
+});
+
+appControllers.controller('Login2Ctrl', function ($state, $scope, $ionicPopup, AuthService) {
+    $scope.data = {};
+    $scope.login = function (data) {
+        AuthService.login(data.username, data.password).then(function (auth) {
+            $state.go('main.dash', {}, {reload: true});
+            $scope.setCurrentUsername(data.username);
+
+        }, function (err) {
+            var alertPopup = $ionicPopup.alert({
+                title: 'Login failed!',
+                template: 'Please check your credentials.'
+            });
+        })
+    }
+});
+
+
+appControllers.controller('DashCtrl', function ($state, $scope, $ionicPopup, $http, AuthService) {
     console.log('dash control. isLoggedIn = ', UserService.model.isLoggedIn);
+    
+    $scope.logout = function () {
+        AuthService.logout();
+        $state.go('login');
+    };
+
+    //TODO: continue logic!!!
 });
 
 appControllers.controller('ChatsCtrl', function ($scope, Chats) {
@@ -136,7 +182,7 @@ appControllers.controller('CategoriesCtrl', function ($scope, $http, $state, $io
     };
 
     $scope.sub = function () {
-        if(!$scope.user.model.email){
+        if (!$scope.user.model.email) {
             $scope.user.restoreState();
         }
         var params = {
