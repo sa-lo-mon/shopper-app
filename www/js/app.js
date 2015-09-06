@@ -138,7 +138,7 @@ app.config(function ($httpProvider) {
     });
 });
 
-app.run(function ($ionicPlatform, $window, UserService) {
+app.run(function ($ionicPlatform, $window, AuthService) {
 
     $ionicPlatform.ready(function () {
 
@@ -165,8 +165,6 @@ app.run(function ($ionicPlatform, $window, UserService) {
                 cookie: true,
                 xfbml: true
             });
-
-            UserService.watchLoginChange();
         };
 
         (function (d) {

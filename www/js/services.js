@@ -165,6 +165,7 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES, LOGIN_TYPE, 
     var authToken;
 
     function loadUserCredentials() {
+        console.log('loadUserCredentials');
         var token = window.localStorage.getItem(LOCAL_TOKEN_KEY);
         if (token) {
             useCredentials(token);
@@ -174,6 +175,7 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES, LOGIN_TYPE, 
     function isValidUser(loginData) {
         return $q(function (resolve, reject) {
             if (loginData.username && loginData.password) {
+
                 //Get user credentials from database
                 $http.post('/login', loginData)
                     .success(function (data) {
@@ -188,44 +190,54 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES, LOGIN_TYPE, 
         });
     }
 
-    function storeUserCredentials(token) {
-        console.log(token);
-        /* var user = {};
-         user.name = response.name;
-         user.email = response.email;
-         if (response.gender) {
-         response.gender.toString().toLowerCase() === 'male' ? user.gender = 'M' : user.gender = 'F';
-         } else {
-         user.gender = '';
-         }
-         user.profilePic = picResponse.data.url;
-
-         window.localStorage.setItem('userInfo', user);
-
-         console.log('user.profilePic: ', user.profilePic);
-         */
+    function storeUserCredentials(userData) {
+        console.log(userData);
+        var name = userData.name.split(' ')[0];
+        var id = userData.id;
+        var token = name + '.' + id;
         window.localStorage.setItem(LOCAL_TOKEN_KEY, token);
         useCredentials(token);
+    };
+
+    function loginRedirect(data) {
+        var _self = this;
+        if (!data) {
+            $rootSCope.broadcast(AUTH_EVENTS.notAuthenticated);
+            return;
+        }
+
+        //TODO: need to implement user categories logic
+
+        var path = 'login';
+        var userCategories = data.data.Categories || data.data.data.Categories;
+        if (userCategories && userCategories.length > 0) {
+
+            //redirect to "main" page!
+            path = 'tab.sales';
+        } else {
+
+            //redirect to "categories" page!
+            path = 'categories';
+        }
+        console.log('---6');
+        $state.go(path);
     };
 
     function useCredentials(token) {
         console.log('useCredentials');
         userName = token.split('.')[0];
         isAuthenticated = true;
-        authToken = token;
+        authToken = token.split('.')[1];
 
         if (userName == 'admin') {
             role = USER_ROLES.admin;
-
-        }/* else if (userName == 'user') {
-         role = USER_ROLES.public;
-         }*/
-        else {
+        } else {
             console.log('public role');
             role = USER_ROLES.public;
         }
 
-        $http.defults.headers.common['X-Auth-Token'] = token;
+        $http.defaults.headers.common['X-Auth-Token'] = token;
+
     };
 
     function destroyCredentials() {
@@ -296,7 +308,7 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES, LOGIN_TYPE, 
         });
     }
 
-    // FB Login
+// FB Login
     var facebookLogin = function () {
         return $q(function (resolve, reject) {
             FB.login(function (response) {
@@ -308,7 +320,7 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES, LOGIN_TYPE, 
             }, {scope: 'email, public_profile'});
         });
     };
-    // END FB Login
+// END FB Login
 
     var defaultLogin = function (loginData) {
         return isValidUser(loginData);
@@ -330,9 +342,10 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES, LOGIN_TYPE, 
         loginHandler(loginData, loginType).then(function (data, err) {
             if (err) {
                 console.log('login error: ', err);
-                $rootScope.broadcost(AUTH_EVENTS.notAuthorized);
+                $rootScope.broadcast(AUTH_EVENTS.notAuthorized);
 
             } else {
+                console.log('login data: ', data);
                 storeUserCredentials(data);
             }
         });
@@ -342,6 +355,8 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES, LOGIN_TYPE, 
         destroyCredentials();
     };
 
+// this will occur every time
+// that user will open the application
     loadUserCredentials();
 
     return {
@@ -358,7 +373,8 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES, LOGIN_TYPE, 
             return role;
         }
     };
-});
+})
+;
 
 appServices.factory('AuthInterceptor', function ($rootScope, $q, AUTH_EVENTS) {
     return {
