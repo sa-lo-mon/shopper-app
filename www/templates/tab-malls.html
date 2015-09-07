@@ -1,7 +1,7 @@
 <ion-view view-title="Malls">
   <ion-content>
     <ion-list>
-      <ion-item class="item-remove-animate item-avatar item-icon-right" ng-repeat="mall in malls" type="item-text-wrap" href="#/tab/malls/sales">
+      <ion-item class="item-remove-animate item-avatar item-icon-right" ng-repeat="mall in malls" type="item-text-wrap" href="#/tab/malls/{{mall.Id}}">
         <img ng-src="{{mall.face}}">
         <h2>{{mall.name}}</h2>
         <p>{{mall.lastText}}</p>

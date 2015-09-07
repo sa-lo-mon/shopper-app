@@ -152,7 +152,7 @@ app.config(function ($stateProvider, $urlRouterProvider) {
         }
       })
       .state('tab.mall-sales', {
-        url: '/malls/sales',
+        url: '/malls/:mallId',
         views: {
           'tab-malls': {
             templateUrl: 'templates/tab-malls-sales.html',
@@ -161,7 +161,7 @@ app.config(function ($stateProvider, $urlRouterProvider) {
         }
       })
       .state('tab.sale-details', {
-        url: '/malls/sales/:saleId',
+        url: '/malls/:mallId/:saleId',
         views: {
           'tab-malls': {
             templateUrl: 'templates/tab-malls-sales-details.html',
