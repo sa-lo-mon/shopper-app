@@ -1,9 +1,7 @@
-<!--<fb:login-button scope="public_profile,email" auto_logout_link="true"></fb:login-button>-->
-
 <ion-view view-title="Login">
   <ion-content class="padding">
-    <form ng-submit="doLogin()">
-      <div class="list">
+    <form ng-submit="login()">
+      <ion-list>
         <label class="item item-input">
           <span class="input-label">Username</span>
           <input type="text" ng-model="loginData.email">
@@ -18,7 +16,17 @@
         <label class="item">
           <button ui-sref="register" class="button icon-right ion-plus-round">Register</button>
         </label>
-      </div>
+      </ion-list>
     </form>
+    <div id="social-links">
+      <ul>
+        <li ng-click="fbLogin()">
+              <span class="ifacebook">
+                <img src="img/social-icons/facebook.png">
+              </span>
+          <a href="#" class="afacebook">sign in with facebook</a>
+        </li>
+      </ul>
+    </div>
   </ion-content>
 </ion-view>

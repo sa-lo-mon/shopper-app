@@ -1,7 +1,48 @@
 var appControllers = angular.module('starter.controllers', []);
 
-appControllers.controller('DashCtrl', function ($scope, UserService) {
-    console.log('dash control. isLoggedIn = ', UserService.model.isLoggedIn);
+appControllers.controller('AppCtrl', function ($state, $scope, $ionicPopup, AuthService, AUTH_EVENTS) {
+    console.log('app ctrl start');
+    $scope.username = AuthService.userName();
+
+    $scope.$on(AUTH_EVENTS.notAuthorized, function (event) {
+        var alertPopup = $ionicPopup.alert({
+            title: 'Unauthorized',
+            template: 'You are not allowed to access this resource'
+        });
+    });
+
+    $scope.$on(AUTH_EVENTS.notAuthenticated, function (event) {
+        AuthService.logout();
+        $state.go('login');
+        var alertPopup = $ionicPopup.alert({
+            title: 'Session lost!',
+            template: 'Please login again.'
+        });
+    });
+
+    $scope.SetCurrentUsername = function (name) {
+        $scope.username = name;
+    }
+});
+
+appControllers.controller('Login2Ctrl', function ($state, $scope, $ionicPopup, AuthService) {
+    $scope.data = {};
+    $scope.login = function (data) {
+        AuthService.login(data.username, data.password).then(function (auth) {
+            $state.go('main.dash', {}, {reload: true});
+            $scope.setCurrentUsername(data.username);
+
+        }, function (err) {
+            var alertPopup = $ionicPopup.alert({
+                title: 'Login failed!',
+                template: 'Please check your credentials.'
+            });
+        })
+    }
+});
+
+appControllers.controller('DashCtrl', function ($state, $scope, $ionicPopup, $http, AuthService) {
+    //TODO: continue logic!!!
 });
 
 appControllers.controller('ChatsCtrl', function ($scope, Chats) {
@@ -29,54 +70,21 @@ appControllers.controller('AccountCtrl', function ($scope) {
     };
 });
 
-appControllers.controller('LoginCtrl', function ($state, $scope, $http, $ionicPopup, UserService) {
+appControllers.controller('LoginCtrl', function ($state, $scope, $http, $ionicPopup, AuthService) {
 
-    //init facebook sdk
-    /*
-     FB.init({
-     appId: '421262201393188',
-     channelUrl: 'app/channel.html',
-     status: true,
-     cookie: true,
-     xfbml: true
-     });
-     */
     $scope.loginData = {};
 
-    $scope.doLogin = function () {
-        if ($scope.loginData.email && $scope.loginData.password) {
-            $http.post('/login', $scope.loginData)
-                .success(function (data) {
-                    UserService.loginRedirect(data);
-                })
-                .error(function (data) {
-                    $ionicPopup.alert({
-                        title: 'Login failed!',
-                        template: 'Please check your credentials!'
-                    });
-                });
-        } else {
+    $scope.login = function () {
+        console.log('bla');
+        AuthService.login($scope.loginData, 'default');
+    };
 
-            $ionicPopup.alert({
-                title: 'Login failed!',
-                template: 'Please check your credentials!'
-            });
-        }
+    $scope.fbLogin = function () {
+        AuthService.login($scope.loginData, 'facebook');
     };
 
     $scope.logout = function () {
-
-        UserService.logout();
-
-        FB.getLoginStatus(function (res) {
-            if (res.status === 'connected') {
-                FB.logout(function (res) {
-                    console.log('facebook logged out!');
-                });
-            }
-        });
-
-        $location.path('/login');
+        AuthService.logout();
     };
 });
 
@@ -100,11 +108,8 @@ appControllers.controller('RegisterCtrl', function ($scope, $http, $state) {
     }
 });
 
-appControllers.controller('CategoriesCtrl', function ($scope, $http, $state, $ionicPopup, UserService, Categories) {
-    $scope.user = UserService;
-
-    $scope.categories = [];
-    $scope.userCategories = [];
+appControllers.controller('CategoriesCtrl', function ($scope, $http, $state, $ionicPopup, AuthService, Categories) {
+    $scope.userModel = AuthService.getUserModel();
 
     Categories.all().then(function (data, err) {
         if (err) {
@@ -119,29 +124,29 @@ appControllers.controller('CategoriesCtrl', function ($scope, $http, $state, $io
     });
 
     $scope.getCategories = function () {
-        return $scope.userCategories;
+        return $scope.userModel.categories;
     };
 
     $scope.check = function (value, checked) {
 
-        var idx = $scope.userCategories.indexOf(value);
+        var idx = $scope.userModel.categories.indexOf(value);
 
         if (idx >= 0 && !checked) {
-            $scope.userCategories.splice(idx, 1);
+            $scope.userModel.categories.splice(idx, 1);
         }
 
         if (idx < 0 && checked) {
-            $scope.userCategories.push(value);
+            $scope.userModel.categories.push(value);
         }
     };
 
     $scope.sub = function () {
-        if(!$scope.user.model.email){
-            $scope.user.restoreState();
+        if (!$scope.userModel.email) {
+            $scope.userModel = AuthService.getUserModel();
         }
         var params = {
-            email: $scope.user.model.email,
-            categories: $scope.userCategories
+            email: $scope.userModel.email,
+            categories: $scope.userModel.categories
         };
         console.log('params: ', params);
 
@@ -150,29 +155,31 @@ appControllers.controller('CategoriesCtrl', function ($scope, $http, $state, $io
                 console.log('data: ', data);
 
                 //redirect to 'main' page
-                $state.go('tab.dash');
+                $state.go('tab.sales');
             })
             .error(function (data) {
                 console.error('error in posting categories/complete ', data);
-
-                //TODO: show error message to user
+                $ionicPopup.alert({
+                    title: 'Categories failed!',
+                    template: 'Error in posting categories/complete'
+                });
             });
     };
 });
 
-appControllers.controller('SalesCtrl', function ($scope, $http, UserService) {
+appControllers.controller('SalesCtrl', function ($scope, $http) {
 
 //TODO: implement this!
 
 });
 
-appControllers.controller('MySalesCtrl', function ($scope, $http, UserService) {
+appControllers.controller('MySalesCtrl', function ($scope, $http) {
 
 //TODO: implement this!
 
 });
 
-appControllers.controller('MallsCtrl', function ($scope, $http, UserService) {
+appControllers.controller('MallsCtrl', function ($scope, $http) {
 
 //TODO: implement this!
 

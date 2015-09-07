@@ -66,93 +66,224 @@ appServices.factory('Categories', function ($http, $q) {
     };
 });
 
-appServices.factory('UserService', function ($rootScope, $http, $state, $ionicPopup) {
-    var service = {
-        model: {
-            name: '',
-            email: '',
-            isLoggedIn: false
-        },
+appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER_ROLES, LOGIN_TYPE, AUTH_EVENTS) {
+    var LOCAL_TOKEN_KEY = 'tokenKey';
+    var LOCAL_CATEGORIES_KEY = 'categoriesKey';
+    var userName = '';
+    var isAuthenticated = false;
+    var role = '';
+    var authToken;
 
-        saveState: function () {
-            sessionStorage.UserService = angular.toJson(service.model);
-        },
+    function useCredentials(token) {
+        userName = token.split('.')[0];
+        isAuthenticated = true;
+        authToken = token.split('.')[1];
 
-        restoreState: function () {
-            service.model = angular.fromJson(sessionStorage.UserService);
-        },
+        if (userName == 'admin') {
+            role = USER_ROLES.admin;
+        } else {
 
-        watchLoginChange: function () {
-            var _self = this;
-            FB.Event.subscribe('auth.statusChange', function (res) {
-                if (res.status === 'connected') {
-                    var userId = res.authResponse.userID;
-                    var token = res.authResponse.accessToken;
-                    _self.getUserInfo(userId, token);
+            role = USER_ROLES.public;
+        }
 
-                } else {
-                    _self.logout();
-                    console.log('not logged-in!');
-                    $location.path('/login');
-                }
-            });
-        },
+        $http.defaults.headers.common['X-Auth-Token'] = authToken;
 
-        getUserInfo: function (userID, token) {
-            var _self = this;
-            $rootScope.$apply(function () {
+    };
 
-                $http.get('/login' + '/' + userID + '/' + token)
-                    .success(function (data) {
-                        _self.loginRedirect(data);
-                    })
-                    .error(function (err) {
-                        console.log('user info error: ', err);
-                    });
-            });
-        },
-
-        logout: function () {
-            var _self = this;
-            _self.model.email = '';
-            _self.model.name = '';
-            _self.model.isLoggedIn = false;
-            _self.saveState();
-        },
-
-        loginRedirect: function (data) {
-            var _self = this;
-            if (!data || !data.data) {
-
-                $ionicPopup.alert({
-                    title: 'Login failed!',
-                    template: 'Please check your credentials!'
-                });
-                return;
-            }
-
-            _self.model.email = data.data.email || data.data.data.email;
-            _self.model.name = data.data.FirstName || data.data.data.FirstName;
-            _self.model.isLoggedIn = true;
-            _self.saveState();
-            var path = 'login';
-            var userCategories = data.data.Categories || data.data.data.Categories;
-            if (userCategories && userCategories.length > 0) {
-
-                //redirect to "main" page!
-                path = 'tab.sales';
-            } else {
-
-                //redirect to "categories" page!
-                path = 'categories';
-            }
-            console.log('---6');
-            $state.go(path);
+    function loadUserCredentials() {
+        var token = window.localStorage.getItem(LOCAL_TOKEN_KEY);
+        if (token) {
+            useCredentials(token);
+            loginRedirect();
+        } else {
+            $rootScope.$broadcast(AUTH_EVENTS.notAuthenticated);
         }
     };
 
-    $rootScope.$on('savestate', service.saveState);
-    $rootScope.$on('restorestate', service.restoreState);
+    function isValidUser(loginData) {
+        return $q(function (resolve, reject) {
+            console.log('login data: ', loginData);
+            if (loginData.email && loginData.password) {
 
-    return service;
+                //Get user credentials from database
+                $http.post('/login', loginData)
+                    .success(function (data) {
+                        resolve(data);
+                    })
+                    .error(function (err) {
+                        reject(err);
+                    });
+            } else {
+                reject('Invalid Login Details.');
+            }
+        });
+    }
+
+    function storeUserCredentials(userData) {
+        console.log('user data: ', userData);
+        if (!userData.data) {
+            $rootScope.$broadcast(AUTH_EVENTS.notAuthenticated);
+            return;
+        }
+        var email = userData.data.email || userData.data.data.email;
+        userName = userData.data.FirstName || userData.data.data.FirstName;
+        var categories = userData.data.Categories || userData.data.data.Categories;
+        var token = userName + '.' + email;
+
+        window.localStorage.setItem(LOCAL_TOKEN_KEY, token);
+        window.localStorage.setItem(LOCAL_CATEGORIES_KEY, categories);
+        useCredentials(token);
+    };
+
+
+    function destroyCredentials() {
+        var userName = '';
+        var isAuthenticated = false;
+        var role = '';
+        var authToken = undefined;
+        $http.defaults.headers.common['X-Auth-Token'] = undefined;
+        window.localStorage.removeItem(LOCAL_TOKEN_KEY);
+    }
+
+    function loginRedirect() {
+        var path = 'login';
+        var userCategories = window.localStorage.getItem(LOCAL_CATEGORIES_KEY);
+        if (userCategories && userCategories.length > 0) {
+
+            //redirect to "main" page!
+            path = 'tab.sales';
+        } else {
+
+            //redirect to "categories" page!
+            path = 'categories';
+        }
+        $state.go(path);
+    }
+
+    var isAuthorized = function (authorizedRoles) {
+        if (!angular.isArray(authorizedRoles)) {
+            authorizedRoles = [authorizedRoles];
+        }
+
+        return (isAuthenticated && authorizedRoles.indexf(role) != -1);
+    };
+
+    function getUserInfo(userID, token) {
+        return $http.get('/user' + '/' + userID + '/' + token);
+    }
+
+
+    var facebookLogin = function () {
+        return $q(function (resolve, reject) {
+            FB.login(function (res) {
+                if (res.authResponse) {
+                    var userId = res.authResponse.userID;
+                    var token = res.authResponse.accessToken;
+                    getUserInfo(userId, token).then(function (data, err) {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(data);
+                        }
+                    });
+                } else {
+                    reject('User cancelled login or did not fully authorize.');
+                }
+            }, {scope: 'email, public_profile'});
+        });
+    };
+
+    var defaultLogin = function (loginData) {
+        return isValidUser(loginData);
+    };
+
+    var loginHandler = function (loginData, loginType) {
+        if (loginType == LOGIN_TYPE.facebook) {
+            return facebookLogin();
+
+        } else if (loginType == LOGIN_TYPE.default) {
+            return defaultLogin(loginData);
+
+        } else {
+            return $q.reject('login error!');
+        }
+    };
+
+    var login = function (loginData, loginType) {
+
+        loginHandler(loginData, loginType).then(function (data, err) {
+            if (err || data.data == null) {
+
+                isAuthenticated = false;
+                $rootScope.$broadcast(AUTH_EVENTS.notAuthenticated);
+            } else {
+
+                isAuthenticated = true;
+                storeUserCredentials(data);
+                loginRedirect();
+            }
+        });
+    };
+
+    var logout = function () {
+        destroyCredentials();
+    };
+
+    var getUserModel = function () {
+        var token = window.localStorage.getItem(LOCAL_TOKEN_KEY);
+        var categories = window.localStorage.getItem(LOCAL_CATEGORIES_KEY);
+
+        if (!token) {
+            return null;
+        }
+
+        var name = token.split('.')[0];
+        var email = token.split('.')[1];
+
+        if (categories)
+            categories = categories.split(',');
+
+        return {
+            name: name,
+            email: email,
+            categories: categories
+        };
+    };
+
+// this will occur every time
+// that user will open the application
+    loadUserCredentials();
+
+    return {
+        login: login,
+        logout: logout,
+        isAuthorized: isAuthorized,
+        getUserModel: getUserModel,
+        isAuthenticated: function () {
+            return isAuthenticated;
+        },
+        userName: function () {
+            return userName;
+        },
+        role: function () {
+            return role;
+        }
+    };
+})
+;
+
+appServices.factory('AuthInterceptor', function ($rootScope, $q, AUTH_EVENTS) {
+    return {
+        responseError: function (response) {
+            $rootScope.$broadcast({
+                401: AUTH_EVENTS.notAuthenticated,
+                403: AUTH_EVENTS.notAuthorized
+            }[response.status], response);
+            return $q.reject(response);
+        }
+    };
+});
+
+appServices.config(function ($httpProvider) {
+    $httpProvider.interceptors.push('AuthInterceptor');
 });
