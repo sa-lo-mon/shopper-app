@@ -141,7 +141,7 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
         var isAuthenticated = false;
         var role = '';
         var authToken = undefined;
-        $http.defults.headers.common['X-Auth-Token'] = undefined;
+        $http.defaults.headers.common['X-Auth-Token'] = undefined;
         window.localStorage.removeItem(LOCAL_TOKEN_KEY);
     }
 
@@ -212,11 +212,12 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
     var login = function (loginData, loginType) {
 
         loginHandler(loginData, loginType).then(function (data, err) {
-            if (err) {
-                console.log('login error: ', err);
+            if (err || data.data == null) {
+
                 isAuthenticated = false;
                 $rootScope.$broadcast(AUTH_EVENTS.notAuthenticated);
             } else {
+
                 isAuthenticated = true;
                 storeUserCredentials(data);
                 loginRedirect();
@@ -228,6 +229,27 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
         destroyCredentials();
     };
 
+    var getUserModel = function () {
+        var token = window.localStorage.getItem(LOCAL_TOKEN_KEY);
+        var categories = window.localStorage.getItem(LOCAL_CATEGORIES_KEY);
+
+        if (!token) {
+            return null;
+        }
+
+        var name = token.split('.')[0];
+        var email = token.split('.')[1];
+
+        if (categories)
+            categories = categories.split(',');
+
+        return {
+            name: name,
+            email: email,
+            categories: categories
+        };
+    };
+
 // this will occur every time
 // that user will open the application
     loadUserCredentials();
@@ -236,6 +258,7 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
         login: login,
         logout: logout,
         isAuthorized: isAuthorized,
+        getUserModel: getUserModel,
         isAuthenticated: function () {
             return isAuthenticated;
         },
@@ -246,7 +269,8 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
             return role;
         }
     };
-});
+})
+;
 
 appServices.factory('AuthInterceptor', function ($rootScope, $q, AUTH_EVENTS) {
     return {
