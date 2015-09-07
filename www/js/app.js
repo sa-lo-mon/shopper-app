@@ -93,6 +93,15 @@ app.config(function ($stateProvider, $urlRouterProvider) {
                 }
             }
         })
+        .state('tab.sales', {
+            url: '/sales',
+            views: {
+                'tab-malls': {
+                    templateUrl: 'templates/tab-sales.html',
+                    controller: 'AllSalesCtrl'
+                }
+            }
+        })
         .state('tab.mall-sales', {
             url: '/malls/:mallId',
             views: {
@@ -120,7 +129,7 @@ app.config(function ($stateProvider, $urlRouterProvider) {
                     controller: 'MySalesCtrl'
                 }
             }
-        })
+        });
 
     // if none of the above states are matched, use this as the fallback
     $urlRouterProvider.otherwise('/login');
@@ -232,6 +241,7 @@ app.run(function ($rootScope, $state, AuthService, AUTH_EVENTS) {
         }
 
         if (!AuthService.isAuthenticated()) {
+            console.log('<<<<<');
             if (next.name !== 'login') {
                 event.preventDefault();
                 $state.go('login');

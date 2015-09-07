@@ -139,6 +139,51 @@ app.get('/categories', function (req, res) {
         }
     })
 });
+
+
+app.get('/mallList', function (req, res) {
+    mongoAccessLayer.getCollection('malls', {}, function (err, data) {
+        if (err) {
+            res.json({success: false, data: null, message: err.message});
+        }
+        else {
+            res.json({success: true, data: data, message: null});
+        }
+    })
+});
+
+app.post('/addToMySales', function (req, res) {
+    var cariteria = {
+        condition: {email: "test@gmail.com"},
+        setValues: {sales: req.sale}
+    };
+
+    mongoAccessLayer.updateDocument("users", cariteria, function (err, data) {
+        if (err) {
+            res.json({success: false, data: null, message: err.message});
+
+        } else {
+            res.json({success: true, data: data, message: null});
+        }
+    });
+});
+
+app.post('/removeFromMySales', function (req, res) {
+    var cariteria = {
+        condition: {email: req.email},
+        setValues: {sales: req.sales}
+    };
+
+    mongoAccessLayer.updateDocument("users", cariteria, function (err, data) {
+        if (err) {
+            res.json({success: false, data: null, message: err.message});
+
+        } else {
+            res.json({success: true, data: data, message: null});
+        }
+    });
+});
+
 var port = process.env.PORT || 8000;
 var server = app.listen(port, function () {
     var host = server.address().address;

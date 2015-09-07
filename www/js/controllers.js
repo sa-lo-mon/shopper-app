@@ -155,7 +155,7 @@ appControllers.controller('CategoriesCtrl', function ($scope, $http, $state, $io
                 console.log('data: ', data);
 
                 //redirect to 'main' page
-                $state.go('tab.sales');
+                $state.go('tab.malls');
             })
             .error(function (data) {
                 console.error('error in posting categories/complete ', data);
@@ -175,15 +175,12 @@ appControllers.controller('MallsCtrl', function ($scope, Malls, GeoAlert) {
                 Malls.set(data);
                 $scope.malls = data;
                 console.log('MallsCtrl data: ', data);
-
-            }
-            else {
+            } else {
                 $scope.malls = unorderedMalls;
                 console.log('MallsCtrl data else: ', data);
             }
         });
     });
-
 
     $scope.remove = function (mall) {
         Malls.remove(mall);
@@ -194,6 +191,32 @@ appControllers.controller('MySalesCtrl', function ($scope, MySales) {
     $scope.mysales = MySales.all();
     $scope.remove = function (sale) {
         MySales.remove(sale);
+    }
+});
+
+appControllers.controller('AllSalesCtrl', function ($scope, $stateParams, Malls, Sales) {
+    //console.log('mall ctrl - malls: ', MallsCtrl.malls);\
+    $scope.sales = [];
+
+    function getSales(malls) {
+        for (var i = 0; i < malls.length; i++) {
+            $scope.sales.push(malls[i].sales);
+        }
+    }
+
+    Malls.all().then(function (data, err) {
+        if (err)console.log('error: ', err);
+        else {
+            getSales(data);
+        }
+    });
+
+    $scope.remove = function (mall) {
+        Malls.remove(mall);
+    };
+
+    $scope.add = function (sale) {
+        Sales.add(sale);
     }
 });
 
@@ -218,6 +241,8 @@ appControllers.controller('SalesCtrl', function ($scope, $stateParams, Malls, Sa
         Sales.add(sale);
     }
 });
+
+
 appControllers.controller('SalesCtrlDetails', function ($scope, $stateParams, Sales) {
     $scope.salesDetails = [];
     Sales.get($stateParams.saleId).then(function (data, err) {

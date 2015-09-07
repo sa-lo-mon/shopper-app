@@ -70,7 +70,11 @@ appServices.factory('Malls', function ($http, $q) {
     // Might use a resource here that returns a JSON array
     var malls = [];
     var all = function () {
-        return $http.get("/mallList");
+        if (malls.length > 0) {
+            return $q.resolve(malls);
+        } else {
+            return $http.get("/mallList");
+        }
     };
     var get = function (mallId) {
         return $q(function (resolve, reject) {
@@ -312,6 +316,7 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
 
     function loadUserCredentials() {
         var token = window.localStorage.getItem(LOCAL_TOKEN_KEY);
+        console.log('token-> :', token);
         if (token) {
             useCredentials(token);
             loginRedirect();
@@ -371,12 +376,13 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
         if (userCategories && userCategories.length > 0) {
 
             //redirect to "main" page!
-            path = 'tab.sales';
+            path = 'tab.malls';
         } else {
 
             //redirect to "categories" page!
             path = 'categories';
         }
+        console.log('path -> :', path);
         $state.go(path);
     }
 
@@ -489,8 +495,7 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
             return role;
         }
     };
-})
-;
+});
 
 appServices.factory('AuthInterceptor', function ($rootScope, $q, AUTH_EVENTS) {
     return {
