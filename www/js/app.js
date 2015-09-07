@@ -206,7 +206,6 @@ app.run(function ($rootScope, $state, AuthService, AUTH_EVENTS) {
             if (next.name !== 'login') {
                 event.preventDefault();
                 $state.go('login');
-
             }
         }
     })

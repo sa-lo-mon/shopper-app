@@ -1,6 +1,7 @@
 var appControllers = angular.module('starter.controllers', []);
 
 appControllers.controller('AppCtrl', function ($state, $scope, $ionicPopup, AuthService, AUTH_EVENTS) {
+  console.log('app ctrl start');
   $scope.username = AuthService.userName();
 
   $scope.$on(AUTH_EVENTS.notAuthorized, function (event) {

@@ -102,7 +102,7 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
 
     function isValidUser(loginData) {
         return $q(function (resolve, reject) {
-          console.log('login data: ', loginData);
+            console.log('login data: ', loginData);
             if (loginData.email && loginData.password) {
 
                 //Get user credentials from database
@@ -120,6 +120,11 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
     }
 
     function storeUserCredentials(userData) {
+        console.log('user data: ', userData);
+        if (!userData.data) {
+            $rootScope.$broadcast(AUTH_EVENTS.notAuthenticated);
+            return;
+        }
         var email = userData.data.email || userData.data.data.email;
         userName = userData.data.FirstName || userData.data.data.FirstName;
         var categories = userData.data.Categories || userData.data.data.Categories;
@@ -189,7 +194,6 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
     };
 
     var defaultLogin = function (loginData) {
-      console.log('+3');
         return isValidUser(loginData);
     };
 
@@ -201,12 +205,12 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
             return defaultLogin(loginData);
 
         } else {
-            return $q.defer().reject();
+            return $q.reject('login error!');
         }
     };
 
     var login = function (loginData, loginType) {
-      console.log('bla 2')
+
         loginHandler(loginData, loginType).then(function (data, err) {
             if (err) {
                 console.log('login error: ', err);
@@ -254,4 +258,8 @@ appServices.factory('AuthInterceptor', function ($rootScope, $q, AUTH_EVENTS) {
             return $q.reject(response);
         }
     };
+});
+
+appServices.config(function ($httpProvider) {
+    $httpProvider.interceptors.push('AuthInterceptor');
 });
