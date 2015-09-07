@@ -139,9 +139,96 @@ app.get('/categories', function (req, res) {
         }
     })
 });
+
+function tmpInsert(){
+    var documentArray = [{
+        Id: 0,
+        name: '???? ???????',
+        lat: '32.164984',
+        long: '34.823771',
+        face: 'https://pbs.twimg.com/profile_images/514549811765211136/9SgAuHeY.png'
+    }, {
+        Id: 1,
+        name: '????? ???????',
+        lat: '32.164984',
+        long: '34.444771',
+        face: 'https://avatars3.githubusercontent.com/u/11214?v=3&s=460'
+    }, {
+        Id: 2,
+        name: '???? ??????',
+        lat: '32.555584',
+        long: '34.823771',
+        face: 'https://pbs.twimg.com/profile_images/479090794058379264/84TKj_qa.jpeg'
+    }, {
+        Id: 3,
+        name: '????',
+        lat: '30.164984',
+        long: '34.823771',
+        face: 'https://pbs.twimg.com/profile_images/491995398135767040/ie2Z_V6e.jpeg'
+    }, {
+        Id: 4,
+        name: '???????',
+        lat: '32.555984',
+        long: '34.223771',
+        face: 'https://pbs.twimg.com/profile_images/578237281384841216/R3ae1n61.png'
+    }];
+    console.log('insert');
+    mongoAccessLayer.batchInsert('malls', documentArray, function (err, data) {
+        if (err) {
+            console.log(err);
+        } else {
+            console.log(data);
+        }
+    });
+}
+
+function tmpUpdate(){
+    var sales = {"sales" :[
+        {
+        id: 0,
+        name: '50% on NIKE',
+        details: '50%',
+        face: 'https://pbs.twimg.com/profile_images/514549811765211136/9SgAuHeY.png'
+    }, {
+        id: 1,
+        name: 'Max Lynx',
+        details: 'Hey, it\'s me',
+        face: 'https://avatars3.githubusercontent.com/u/11214?v=3&s=460'
+    },{
+        id: 2,
+        name: 'Adam Bradleyson',
+        details: 'I should buy a boat',
+        face: 'https://pbs.twimg.com/profile_images/479090794058379264/84TKj_qa.jpeg'
+    }, {
+        id: 3,
+        name: 'Perry Governor',
+        details: 'Look at my mukluks!',
+        face: 'https://pbs.twimg.com/profile_images/491995398135767040/ie2Z_V6e.jpeg'
+    }, {
+        id: 4,
+        name: 'Mike Harrington',
+        details: 'This is wicked good ice cream.',
+        face: 'https://pbs.twimg.com/profile_images/578237281384841216/R3ae1n61.png'
+    }]};
+
+    var criteria ={};
+    criteria.condition = {"Id" : 0};
+    criteria.setValues = sales;
+
+
+    mongoAccessLayer.updateDocument('malls', criteria, function (err, data) {
+        if (err) {
+            console.log(err);
+        } else {
+            console.log(data);
+        }
+    });
+
+}
 var port = process.env.PORT || 8000;
 var server = app.listen(port, function () {
     var host = server.address().address;
     var port = server.address().port;
     console.log('listening at http://%s:%s', host, port);
 });
+//tmpUpdate();

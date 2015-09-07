@@ -1,6 +1,5 @@
 var app = angular.module('starter', ['ionic', 'starter.controllers', 'starter.services']);
-
-app.run(function ($ionicPlatform, $window, UserService) {
+app.run(function ($ionicPlatform, $window, GeoAlert,UserService) {
 
     $ionicPlatform.ready(function () {
 
@@ -50,6 +49,27 @@ app.run(function ($ionicPlatform, $window, UserService) {
             ref.parentNode.insertBefore(js, ref);
 
         }(document));
+
+      //Begin the service
+      //hard coded 'target'
+      //herzeliah shopping center lat and long
+      var lat = 32.164984;
+      var long = 34.823771;
+      function onConfirm(idx) {
+        console.log('button '+idx+' pressed');
+      }
+
+      GeoAlert.begin(lat,long, function() {
+        console.log('TARGET');
+        GeoAlert.end();
+/*        navigator.notification.confirm(
+          'You are near a target!',
+          onConfirm,
+          'Target!',
+          ['Cancel','View']
+        );*/
+
+      });
     });
 });
 
@@ -122,15 +142,33 @@ app.config(function ($stateProvider, $urlRouterProvider) {
             }
         })
 
-        .state('tab.sales', {
-            url: '/sales',
-            views: {
-                'tab-sales': {
-                    templateUrl: 'templates/tab-sales.html',
-                    controller: 'SalesCtrl'
-                }
-            }
-        })
+      .state('tab.malls', {
+        url: '/malls',
+        views: {
+          'tab-malls': {
+            templateUrl: 'templates/tab-malls.html',
+            controller: 'MallsCtrl'
+          }
+        }
+      })
+      .state('tab.mall-sales', {
+        url: '/malls/sales',
+        views: {
+          'tab-malls': {
+            templateUrl: 'templates/tab-malls-sales.html',
+            controller: 'SalesCtrl'
+          }
+        }
+      })
+      .state('tab.sale-details', {
+        url: '/malls/sales/:saleId',
+        views: {
+          'tab-malls': {
+            templateUrl: 'templates/tab-malls-sales-details.html',
+            controller: 'SalesCtrlDetails'
+          }
+        }
+      })
 
         .state('tab.my-sales', {
             url: '/my-sales',
@@ -141,16 +179,6 @@ app.config(function ($stateProvider, $urlRouterProvider) {
                 }
             }
         })
-
-        .state('tab.malls', {
-            url: '/malls',
-            views: {
-                'tab-malls': {
-                    templateUrl: 'templates/tab-malls.html',
-                    controller: 'MallsCtrl'
-                }
-            }
-        });
 
     // if none of the above states are matched, use this as the fallback
     $urlRouterProvider.otherwise('/login');
@@ -176,3 +204,5 @@ app.config(function ($httpProvider) {
         }
     });
 });
+
+

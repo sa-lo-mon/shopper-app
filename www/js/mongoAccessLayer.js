@@ -57,6 +57,20 @@ MongoAccessLayer.prototype.insertDocument = function (collectionName, document, 
     });
 };
 
+MongoAccessLayer.prototype.batchInsert = function (collectionName, documentsArray, callback) {
+    this.connect(function (err, db) {
+        if (err) {
+            callback(err, null);
+
+        } else {
+            db.collection(collectionName).insert(documentsArray, function (err, result) {
+                assert.equal(err, null);
+                callback(null, result);
+            });
+        }
+    });
+};
+
 MongoAccessLayer.prototype.getCollection = function (collectionName, query, callback) {
     this.connect(function (err, db) {
         if (err) {
@@ -79,6 +93,8 @@ MongoAccessLayer.prototype.getCollection = function (collectionName, query, call
 };
 
 MongoAccessLayer.prototype.updateDocument = function (collectionName, criteria, callback) {
+  console.log(criteria.condition);
+  console.log(criteria.setValues);
     this.connect(function (err, db) {
         if (err) {
             callback(err, null);
@@ -93,6 +109,8 @@ MongoAccessLayer.prototype.updateDocument = function (collectionName, criteria, 
     });
 };
 
+
 var mongoAccessLayer = new MongoAccessLayer();
 mongoAccessLayer.setup(config.mongoUrl);
 module.exports = mongoAccessLayer;
+
