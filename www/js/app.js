@@ -195,6 +195,7 @@ app.run(function ($rootScope, $state, AuthService, AUTH_EVENTS) {
         if ('data' in next && 'authorizedRoles' in next.data) {
             var authorizedRoles = next.data.authorizedRoles;
             if (!AuthService.isAuthorized(authorizedRoles)) {
+
                 next.preventDefault();
                 $state.go($state.current, {}, {reload: true});
                 $rootScope.$broadcast(AUTH_EVENTS.notAuthorized);
@@ -202,10 +203,10 @@ app.run(function ($rootScope, $state, AuthService, AUTH_EVENTS) {
         }
 
         if (!AuthService.isAuthenticated()) {
-            console.log('user is not isAuthenticated!');
             if (next.name !== 'login') {
                 event.preventDefault();
                 $state.go('login');
+
             }
         }
     })

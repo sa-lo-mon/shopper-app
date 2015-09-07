@@ -66,115 +66,44 @@ appServices.factory('Categories', function ($http, $q) {
     };
 });
 
-appServices.factory('UserService', function ($rootScope, $http, $state, $ionicPopup) {
-    var service = {
-        model: {
-            name: '',
-            email: '',
-            isLoggedIn: false
-        },
-
-        saveState: function () {
-            sessionStorage.UserService = angular.toJson(service.model);
-        },
-
-        restoreState: function () {
-            service.model = angular.fromJson(sessionStorage.UserService);
-        },
-
-        watchLoginChange: function () {
-            var _self = this;
-            FB.Event.subscribe('auth.statusChange', function (res) {
-                if (res.status === 'connected') {
-                    var userId = res.authResponse.userID;
-                    var token = res.authResponse.accessToken;
-                    _self.getUserInfo(userId, token);
-
-                } else {
-                    _self.logout();
-                    console.log('not logged-in!');
-                    $location.path('/login');
-                }
-            });
-        },
-
-        getUserInfo: function (userID, token) {
-            var _self = this;
-            $rootScope.$apply(function () {
-
-                $http.get('/user' + '/' + userID + '/' + token)
-                    .success(function (data) {
-                        _self.loginRedirect(data);
-                    })
-                    .error(function (err) {
-                        console.log('user info error: ', err);
-                    });
-            });
-        },
-
-        logout: function () {
-            var _self = this;
-            _self.model.email = '';
-            _self.model.name = '';
-            _self.model.isLoggedIn = false;
-            _self.saveState();
-        },
-
-        loginRedirect: function (data) {
-            var _self = this;
-            if (!data || !data.data) {
-
-                $ionicPopup.alert({
-                    title: 'Login failed!',
-                    template: 'Please check your credentials!'
-                });
-                return;
-            }
-
-            _self.model.email = data.data.email || data.data.data.email;
-            _self.model.name = data.data.FirstName || data.data.data.FirstName;
-            _self.model.isLoggedIn = true;
-            _self.saveState();
-            var path = 'login';
-            var userCategories = data.data.Categories || data.data.data.Categories;
-            if (userCategories && userCategories.length > 0) {
-
-                //redirect to "main" page!
-                path = 'tab.sales';
-            } else {
-
-                //redirect to "categories" page!
-                path = 'categories';
-            }
-            console.log('---6');
-            $state.go(path);
-        }
-    };
-
-    $rootScope.$on('savestate', service.saveState);
-    $rootScope.$on('restorestate', service.restoreState);
-
-    return service;
-});
-
-appServices.service('AuthService', function ($q, $http, USER_ROLES, LOGIN_TYPE, AUTH_EVENTS) {
+appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER_ROLES, LOGIN_TYPE, AUTH_EVENTS) {
     var LOCAL_TOKEN_KEY = 'tokenKey';
+    var LOCAL_CATEGORIES_KEY = 'categoriesKey';
     var userName = '';
     var isAuthenticated = false;
     var role = '';
     var authToken;
 
+    function useCredentials(token) {
+        userName = token.split('.')[0];
+        isAuthenticated = true;
+        authToken = token.split('.')[1];
+
+        if (userName == 'admin') {
+            role = USER_ROLES.admin;
+        } else {
+
+            role = USER_ROLES.public;
+        }
+
+        $http.defaults.headers.common['X-Auth-Token'] = authToken;
+
+    };
+
     function loadUserCredentials() {
-        console.log('loadUserCredentials');
         var token = window.localStorage.getItem(LOCAL_TOKEN_KEY);
         if (token) {
             useCredentials(token);
+            loginRedirect();
+        } else {
+            $rootScope.$broadcast(AUTH_EVENTS.notAuthenticated);
         }
     };
 
     function isValidUser(loginData) {
         return $q(function (resolve, reject) {
-            if (loginData.username && loginData.password) {
+          console.log('login data: ', loginData);
+            if (loginData.email && loginData.password) {
 
                 //Get user credentials from database
                 $http.post('/login', loginData)
@@ -191,54 +120,16 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES, LOGIN_TYPE, 
     }
 
     function storeUserCredentials(userData) {
-        console.log(userData);
-        var name = userData.name.split(' ')[0];
-        var id = userData.id;
-        var token = name + '.' + id;
+        var email = userData.data.email || userData.data.data.email;
+        userName = userData.data.FirstName || userData.data.data.FirstName;
+        var categories = userData.data.Categories || userData.data.data.Categories;
+        var token = userName + '.' + email;
+
         window.localStorage.setItem(LOCAL_TOKEN_KEY, token);
+        window.localStorage.setItem(LOCAL_CATEGORIES_KEY, categories);
         useCredentials(token);
     };
 
-    function loginRedirect(data) {
-        var _self = this;
-        if (!data) {
-            $rootSCope.broadcast(AUTH_EVENTS.notAuthenticated);
-            return;
-        }
-
-        //TODO: need to implement user categories logic
-
-        var path = 'login';
-        var userCategories = data.data.Categories || data.data.data.Categories;
-        if (userCategories && userCategories.length > 0) {
-
-            //redirect to "main" page!
-            path = 'tab.sales';
-        } else {
-
-            //redirect to "categories" page!
-            path = 'categories';
-        }
-        console.log('---6');
-        $state.go(path);
-    };
-
-    function useCredentials(token) {
-        console.log('useCredentials');
-        userName = token.split('.')[0];
-        isAuthenticated = true;
-        authToken = token.split('.')[1];
-
-        if (userName == 'admin') {
-            role = USER_ROLES.admin;
-        } else {
-            console.log('public role');
-            role = USER_ROLES.public;
-        }
-
-        $http.defaults.headers.common['X-Auth-Token'] = token;
-
-    };
 
     function destroyCredentials() {
         var userName = '';
@@ -249,23 +140,9 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES, LOGIN_TYPE, 
         window.localStorage.removeItem(LOCAL_TOKEN_KEY);
     }
 
-    function loginRedirect(data) {
-        var _self = this;
-        if (!data || !data.data) {
-
-            $ionicPopup.alert({
-                title: 'Login failed!',
-                template: 'Please check your credentials!'
-            });
-            return;
-        }
-
-        _self.model.email = data.data.email || data.data.data.email;
-        _self.model.name = data.data.FirstName || data.data.data.FirstName;
-        _self.model.isLoggedIn = true;
-        _self.saveState();
+    function loginRedirect() {
         var path = 'login';
-        var userCategories = data.data.Categories || data.data.data.Categories;
+        var userCategories = window.localStorage.getItem(LOCAL_CATEGORIES_KEY);
         if (userCategories && userCategories.length > 0) {
 
             //redirect to "main" page!
@@ -275,7 +152,6 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES, LOGIN_TYPE, 
             //redirect to "categories" page!
             path = 'categories';
         }
-        console.log('---6');
         $state.go(path);
     }
 
@@ -287,42 +163,33 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES, LOGIN_TYPE, 
         return (isAuthenticated && authorizedRoles.indexf(role) != -1);
     };
 
-
-    function getUserInfo() {
-        return $q(function (resolve, reject) {
-
-            // get basic info
-            FB.api('/me', function (response, err) {
-
-                if (err) {
-                    reject(err);
-
-                } else {
-
-                    // store data to DB - Call to API
-                    // Todo
-                    // After posting user data to server successfully store user data locally
-                    resolve(response);
-                }
-            });
-        });
+    function getUserInfo(userID, token) {
+        return $http.get('/user' + '/' + userID + '/' + token);
     }
 
-// FB Login
+
     var facebookLogin = function () {
         return $q(function (resolve, reject) {
-            FB.login(function (response) {
-                if (response.authResponse) {
-                    resolve(getUserInfo());
+            FB.login(function (res) {
+                if (res.authResponse) {
+                    var userId = res.authResponse.userID;
+                    var token = res.authResponse.accessToken;
+                    getUserInfo(userId, token).then(function (data, err) {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(data);
+                        }
+                    });
                 } else {
                     reject('User cancelled login or did not fully authorize.');
                 }
             }, {scope: 'email, public_profile'});
         });
     };
-// END FB Login
 
     var defaultLogin = function (loginData) {
+      console.log('+3');
         return isValidUser(loginData);
     };
 
@@ -339,14 +206,16 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES, LOGIN_TYPE, 
     };
 
     var login = function (loginData, loginType) {
+      console.log('bla 2')
         loginHandler(loginData, loginType).then(function (data, err) {
             if (err) {
                 console.log('login error: ', err);
-                $rootScope.broadcast(AUTH_EVENTS.notAuthorized);
-
+                isAuthenticated = false;
+                $rootScope.$broadcast(AUTH_EVENTS.notAuthenticated);
             } else {
-                console.log('login data: ', data);
+                isAuthenticated = true;
                 storeUserCredentials(data);
+                loginRedirect();
             }
         });
     };
@@ -373,8 +242,7 @@ appServices.service('AuthService', function ($q, $http, USER_ROLES, LOGIN_TYPE, 
             return role;
         }
     };
-})
-;
+});
 
 appServices.factory('AuthInterceptor', function ($rootScope, $q, AUTH_EVENTS) {
     return {
@@ -386,5 +254,4 @@ appServices.factory('AuthInterceptor', function ($rootScope, $q, AUTH_EVENTS) {
             return $q.reject(response);
         }
     };
-
 });
