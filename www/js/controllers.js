@@ -167,20 +167,67 @@ appControllers.controller('CategoriesCtrl', function ($scope, $http, $state, $io
     };
 });
 
-appControllers.controller('SalesCtrl', function ($scope, $http) {
+appControllers.controller('MallsCtrl', function ($scope, Malls, GeoAlert) {
+    $scope.malls = {};
+    Malls.all().then(function (unorderedMalls, error) {
+        GeoAlert.getDistance(unorderedMalls.data.data).then(function (data, err) {
+            if (data) {
+                Malls.set(data);
+                $scope.malls = data;
+                console.log('MallsCtrl data: ', data);
 
-//TODO: implement this!
+            }
+            else {
+                $scope.malls = unorderedMalls;
+                console.log('MallsCtrl data else: ', data);
+            }
+        });
+    });
 
+
+    $scope.remove = function (mall) {
+        Malls.remove(mall);
+    }
 });
 
-appControllers.controller('MySalesCtrl', function ($scope, $http) {
-
-//TODO: implement this!
-
+appControllers.controller('MySalesCtrl', function ($scope, MySales) {
+    $scope.mysales = MySales.all();
+    $scope.remove = function (sale) {
+        MySales.remove(sale);
+    }
 });
 
-appControllers.controller('MallsCtrl', function ($scope, $http) {
+appControllers.controller('SalesCtrl', function ($scope, $stateParams, Malls, Sales) {
+    //console.log('mall ctrl - malls: ', MallsCtrl.malls);\
+    $scope.currentMallId = $stateParams.mallId;
+    $scope.sales = {};
 
-//TODO: implement this!
+    Malls.get($stateParams.mallId).then(function (data, err) {
+        if (err)console.log('error: ', err);
+        else {
+            Sales.set(data.sales);
+            $scope.sales = data.sales;
+        }
+    });
 
+    $scope.remove = function (mall) {
+        Malls.remove(mall);
+    };
+
+    $scope.add = function (sale) {
+        Sales.add(sale);
+    }
+});
+appControllers.controller('SalesCtrlDetails', function ($scope, $stateParams, Sales) {
+    $scope.salesDetails = [];
+    Sales.get($stateParams.saleId).then(function (data, err) {
+        if (err)console.log('error: ', err);
+        else {
+            console.log("salesCtrlDetails", data);
+            $scope.salesDetails = data;
+        }
+    });
+    /*    $scope.remove = function(mall) {
+     Malls.remove(mall);
+     }*/
 });

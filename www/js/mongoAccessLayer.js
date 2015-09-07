@@ -43,6 +43,20 @@ MongoAccessLayer.prototype.findUser = function (collectionName, value, callback)
     })
 };
 
+MongoAccessLayer.prototype.batchInsert = function (collectionName, documentsArray, callback) {
+    this.connect(function (err, db) {
+        if (err) {
+            callback(err, null);
+
+        } else {
+            db.collection(collectionName).insert(documentsArray, function (err, result) {
+                assert.equal(err, null);
+                callback(null, result);
+            });
+        }
+    });
+};
+
 MongoAccessLayer.prototype.insertDocument = function (collectionName, document, callback) {
     this.connect(function (err, db) {
         if (err) {
