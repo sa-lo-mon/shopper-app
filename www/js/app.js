@@ -142,9 +142,10 @@ app.config(function ($httpProvider) {
 
                 //if url doesn't contain '.html'
                 if (url.indexOf('.html') == -1) {
-                    //var server = 'https://shopper-server.herokuapp.com';
-                    var localhost = 'http://localhost:8000';
-                    config.url = localhost + config.url;
+                    var server = 'https://shopper-app.herokuapp.com';
+                    //var localhost = 'http://localhost:8000';
+                    //config.url = localhost + config.url;
+                    config.url = server + config.url;
                     console.log('config url: ', config.url);
                 }
 
@@ -233,7 +234,6 @@ app.run(function ($rootScope, $state, AuthService, AUTH_EVENTS) {
         if ('data' in next && 'authorizedRoles' in next.data) {
             var authorizedRoles = next.data.authorizedRoles;
             if (!AuthService.isAuthorized(authorizedRoles)) {
-
                 next.preventDefault();
                 $state.go($state.current, {}, {reload: true});
                 $rootScope.$broadcast(AUTH_EVENTS.notAuthorized);
@@ -241,7 +241,6 @@ app.run(function ($rootScope, $state, AuthService, AUTH_EVENTS) {
         }
 
         if (!AuthService.isAuthenticated()) {
-            console.log('<<<<<');
             if (next.name !== 'login') {
                 event.preventDefault();
                 $state.go('login');
