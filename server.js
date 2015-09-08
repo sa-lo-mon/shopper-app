@@ -139,6 +139,125 @@ app.get('/categories', function (req, res) {
         }
     })
 });
+
+app.get('/sales', function (req, res) {
+    mongoAccessLayer.getCollection('sales', {}, function (err, data) {
+        if (err) {
+            res.json({success: false, data: null, message: err.message});
+        } else {
+            res.json({success: true, data: data, message: null});
+        }
+    })
+});
+
+app.get('/sales/:ids', function (req, res) {
+    if (req.params.ids) {
+        console.log('ids: ', req.params.ids);
+        var idsArray = req.params.ids.split(',');
+        idsArray = idsArray.map(function (id) {
+            return parseInt(id);
+        });
+
+        var criteria = {
+            id: {$in: idsArray}
+        };
+        mongoAccessLayer.getCollection('sales', criteria, function (err, data) {
+            if (err) {
+                res.json({success: false, data: null, message: err.message});
+            } else {
+                res.json({success: true, data: data, message: null});
+            }
+        })
+    } else {
+        res.json(null);
+    }
+});
+
+app.get('/mallSales/:id', function (req, res) {
+    if (req.params.id) {
+        console.log('params:', req.params);
+        var id = parseInt(req.params.id);
+        console.log(req.params.id);
+        var criteria = {
+            mallId: id
+        };
+        mongoAccessLayer.getCollection('sales', criteria, function (err, data) {
+            if (err) {
+                res.json({success: false, data: null, message: err.message});
+            } else {
+                res.json({success: true, data: data, message: null});
+            }
+        })
+    } else {
+        res.json(null);
+    }
+});
+
+app.get('/malls', function (req, res) {
+    mongoAccessLayer.getCollection('malls', {}, function (err, data) {
+        if (err) {
+            res.json({success: false, data: null, message: err.message});
+        }
+        else {
+            res.json({success: true, data: data, message: null});
+        }
+    })
+});
+
+app.post('/addToMySales', function (req, res) {
+    var cariteria = {
+        condition: {email: req.body.email},
+        setValues: {Sales: req.body.saleDetails}
+    };
+    console.log("email", cariteria.condition);
+    console.log("sale details", cariteria.setValues);
+
+    console.log("(*)*)*)*)*)*)*)" + cariteria);
+
+
+    mongoAccessLayer.pushDocument("users", cariteria, function (err, data) {
+        if (err) {
+            console.log(err);
+            res.json({success: false, data: null, message: err.message});
+
+
+        } else {
+            console.log(data);
+            res.json({success: true, data: data, message: null});
+        }
+    });
+});
+
+app.post('/removeFromMySales', function (req, res) {
+console.log(req.body);
+   var criteria = {
+        condition: {email: req.body.email},
+        setValues: {Sales: req.body.sales}
+    };
+
+    mongoAccessLayer.updateDocument("users", criteria, function (err, data) {
+        if (err) {
+            res.json({success: false, data: null, message: err.message});
+
+        } else {
+            res.json({success: true, data: data, message: null});
+        }
+    });
+});
+
+app.get('/mySalesList/:user', function (req, res) {
+    var query = req.params.user;
+
+    mongoAccessLayer.getMySales("users", query, function (err, data) {
+        if (err) {
+            res.json({success: false, data: null, message: err.message});
+
+        } else {
+            res.json({success: true, data: data, message: null});
+        }
+    });
+});
+
 var port = process.env.PORT || 8000;
 var server = app.listen(port, function () {
     var host = server.address().address;

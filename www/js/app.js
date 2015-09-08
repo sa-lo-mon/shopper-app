@@ -84,6 +84,15 @@ app.config(function ($stateProvider, $urlRouterProvider) {
             }
         })
 
+        .state('tab.malls', {
+            url: '/malls',
+            views: {
+                'tab-malls': {
+                    templateUrl: 'templates/tab-malls.html',
+                    controller: 'MallsCtrl'
+                }
+            }
+        })
         .state('tab.sales', {
             url: '/sales',
             views: {
@@ -93,23 +102,30 @@ app.config(function ($stateProvider, $urlRouterProvider) {
                 }
             }
         })
-
+        .state('tab.sale-detail', {
+            url: '/sales/:saleId',
+            views: {
+                'tab-sales': {
+                    templateUrl: 'templates/tab-sale-details.html',
+                    controller: 'SaleDetailsCtrl'
+                }
+            }
+        })
+        .state('tab.mall-sales', {
+            url: '/malls/:mallId',
+            views: {
+                'tab-malls': {
+                    templateUrl: 'templates/tab-malls-sales.html',
+                    controller: 'MallSalesCtrl'
+                }
+            }
+        })
         .state('tab.my-sales', {
             url: '/my-sales',
             views: {
                 'tab-my-sales': {
                     templateUrl: 'templates/tab-my-sales.html',
                     controller: 'MySalesCtrl'
-                }
-            }
-        })
-
-        .state('tab.malls', {
-            url: '/malls',
-            views: {
-                'tab-malls': {
-                    templateUrl: 'templates/tab-malls.html',
-                    controller: 'MallsCtrl'
                 }
             }
         });
@@ -138,7 +154,7 @@ app.config(function ($httpProvider) {
     });
 });
 
-app.run(function ($ionicPlatform, $window, AuthService) {
+app.run(function ($ionicPlatform, $window, GeoAlert) {
 
     $ionicPlatform.ready(function () {
 
@@ -186,6 +202,28 @@ app.run(function ($ionicPlatform, $window, AuthService) {
             ref.parentNode.insertBefore(js, ref);
 
         }(document));
+
+        //Begin the service
+        //hard coded 'target'
+        //herzeliah shopping center lat and long
+        var lat = 32.164984;
+        var long = 34.823771;
+
+        function onConfirm(idx) {
+            console.log('button ' + idx + ' pressed');
+        }
+
+        GeoAlert.begin(lat, long, function () {
+            console.log('TARGET');
+            GeoAlert.end();
+            /*        navigator.notification.confirm(
+             'You are near a target!',
+             onConfirm,
+             'Target!',
+             ['Cancel','View']
+             );*/
+
+        });
     });
 });
 
@@ -203,6 +241,7 @@ app.run(function ($rootScope, $state, AuthService, AUTH_EVENTS) {
         }
 
         if (!AuthService.isAuthenticated()) {
+            console.log('<<<<<');
             if (next.name !== 'login') {
                 event.preventDefault();
                 $state.go('login');

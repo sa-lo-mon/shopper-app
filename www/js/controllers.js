@@ -155,7 +155,7 @@ appControllers.controller('CategoriesCtrl', function ($scope, $http, $state, $io
                 console.log('data: ', data);
 
                 //redirect to 'main' page
-                $state.go('tab.sales');
+                $state.go('tab.malls');
             })
             .error(function (data) {
                 console.error('error in posting categories/complete ', data);
@@ -167,20 +167,99 @@ appControllers.controller('CategoriesCtrl', function ($scope, $http, $state, $io
     };
 });
 
-appControllers.controller('SalesCtrl', function ($scope, $http) {
+appControllers.controller('MallsCtrl', function ($scope, Malls, GeoAlert) {
+    $scope.malls = {};
+    Malls.all().then(function (unorderedMalls, error) {
+        GeoAlert.getDistance(unorderedMalls.data.data).then(function (data, err) {
+            if (data) {
+                Malls.set(data);
+                $scope.malls = data;
+                console.log('MallsCtrl data: ', data);
+            } else {
+                $scope.malls = unorderedMalls;
+                console.log('MallsCtrl data else: ', data);
+            }
+        });
+    });
 
-//TODO: implement this!
-
+    $scope.remove = function (mall) {
+        Malls.remove(mall);
+    }
 });
 
-appControllers.controller('MySalesCtrl', function ($scope, $http) {
+appControllers.controller('MySalesCtrl', function ($scope, MySales) {
+    $scope.mysales = {};
 
-//TODO: implement this!
+    MySales.all().then(function (data, err) {
+        if (err)console.log('error: ', err);
+        else {
+            console.log("my sales - data", data.data.data);
+            $scope.mysales = data.data.data;
+        }
+    });
 
+    $scope.remove = function (sale) {
+        $scope.mysales.splice($scope.mysales.indexOf(sale), 1);
+        MySales.remove(sale);
+    }
 });
 
-appControllers.controller('MallsCtrl', function ($scope, $http) {
+appControllers.controller('SalesCtrl', function ($scope, $stateParams, Malls, Sales, MySales) {
+    $scope.sales = {};
 
-//TODO: implement this!
+    Sales.all().then(function (data, err) {
+        if (err || !data) {
+            console.log('error: ', err);
+
+        } else {
+            console.log('sales: ', data);
+            $scope.sales = data.data.data;
+        }
+    });
+
+    $scope.add = function (sale) {
+        MySales.add(sale);
+    };
+});
+
+appControllers.controller('MallSalesCtrl', function ($scope, $stateParams, Malls, Sales) {
+
+    $scope.currentMallId = $stateParams.mallId;
+    $scope.sales = {};
+
+    Malls.getMallSales($stateParams.mallId).then(function (data, err) {
+        if (err || !data) {
+            console.log('error: ', err);
+        } else {
+            console.log('mall sales: ', data);
+            $scope.sales = data.data.data;
+        }
+    });
+
+    $scope.remove = function (mall) {
+        Malls.remove(mall);
+    };
+
+    $scope.add = function (sale) {
+        Sales.add(sale);
+    }
+});
+
+
+appControllers.controller('SaleDetailsCtrl', function ($scope, $stateParams, Sales) {
+    $scope.sale = {};
+
+    Sales.get($stateParams.saleId).then(function (data, err) {
+        if (err || !data) {
+            console.log('error: ', err);
+        } else {
+            console.log("salesCtrlDetails: ", data);
+            $scope.sale = data;
+        }
+    });
+});
+
+
+appControllers.controller('MallSaleDetailsCtrl', function ($scope, $stateParams, Malls) {
 
 });
