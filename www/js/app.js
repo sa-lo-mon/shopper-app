@@ -142,8 +142,8 @@ app.config(function ($httpProvider) {
 
                 //if url doesn't contain '.html'
                 if (url.indexOf('.html') == -1) {
-                    //var server = 'https://shopper-server.herokuapp.com';
-                    var localhost = 'http://localhost:8000';
+                    var server = 'https://shopper-app.herokuapp.com';
+                    //var localhost = 'http://localhost:8000';
                     config.url = localhost + config.url;
                     console.log('config url: ', config.url);
                 }
