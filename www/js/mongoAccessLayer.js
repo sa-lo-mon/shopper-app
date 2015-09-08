@@ -4,6 +4,7 @@
 var MongoClient = require('mongodb').MongoClient;
 var assert = require('assert');
 var config = require('./config');
+
 function MongoAccessLayer() {
     this.url = Object.create(null);
     this.db = Object.create(null);
@@ -34,7 +35,7 @@ MongoAccessLayer.prototype.findUser = function (collectionName, value, callback)
         } else {
             db.collection(collectionName, function (err, collection) {
                 assert.equal(err, null);
-                collection.findOne(query, ['email', 'FirstName', 'Password','Categories'], function (err, document) {
+                collection.findOne(query, ['email', 'FirstName', 'Password', 'Categories', 'Sales'], function (err, document) {
                     assert.equal(err, null);
                     callback(null, document);
                 });
@@ -76,6 +77,7 @@ MongoAccessLayer.prototype.getCollection = function (collectionName, query, call
         if (err) {
             callback(err, null);
         } else {
+            console.log('query: ', query);
             db.collection(collectionName).find(query, function (err, cursor) {
                 assert.equal(err, null);
                 cursor.toArray(function (err, items) {
@@ -105,6 +107,42 @@ MongoAccessLayer.prototype.updateDocument = function (collectionName, criteria, 
                 });
         }
     });
+};
+
+MongoAccessLayer.prototype.pushDocument = function (collectionName, criteria, callback) {
+    this.connect(function (err, db) {
+        if (err) {
+            callback(err, null);
+
+        } else {
+            console.log(criteria.condition);
+            console.log(criteria.setValues);
+            db.collection(collectionName).update(criteria.condition, {$push: criteria.setValues},
+                function (err, result) {
+                    assert.equal(err, null);
+                    callback(null, result);
+                });
+        }
+    });
+};
+
+MongoAccessLayer.prototype.getMySales = function (collectionName, value, callback) {
+    var query = {"email": value};
+    console.log("find user", value);
+    this.connect(function (err, db) {
+        if (err) {
+            callback(err, null);
+        } else {
+            db.collection(collectionName, function (err, collection) {
+                assert.equal(err, null);
+                collection.findOne(query, ['email', 'FirstName', 'Categories', 'Sales'], function (err, document) {
+                    assert.equal(err, null);
+                    console.log("db retuurns", document);
+                    callback(null, document);
+                });
+            });
+        }
+    })
 };
 
 var mongoAccessLayer = new MongoAccessLayer();

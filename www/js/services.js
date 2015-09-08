@@ -67,25 +67,37 @@ appServices.factory('Categories', function ($http, $q) {
 });
 
 appServices.factory('Malls', function ($http, $q) {
-    // Might use a resource here that returns a JSON array
+
     var malls = [];
     var all = function () {
         if (malls.length > 0) {
             return $q.resolve(malls);
         } else {
-            return $http.get("/mallList");
+
+            //TODO: get malls that are in the
+            // valid radius from user location
+            return $http.get('/malls');
         }
     };
+
     var get = function (mallId) {
+
         return $q(function (resolve, reject) {
             for (var i = 0; i < malls.length; i++) {
                 if (malls[i].Id == mallId) {
-                    //console.log('mall id: ', malls[i].id);
                     resolve(malls[i]);
                 }
             }
+
+            // we didn't get to resolve,
+            // so reject the query
             reject('malls is empty');
         });
+    };
+
+    var getMallSales = function (mallId) {
+        console.log('getMallSales');
+        return $http.get('/mallSales/' + mallId);
     };
 
     return {
@@ -95,48 +107,86 @@ appServices.factory('Malls', function ($http, $q) {
             malls.splice(malls.indexOf(mall), 1);
         },
         get: get,
+        getMallSales: getMallSales,
         set: function (data) {
             malls = data;
         }
     };
 });
 
-appServices.factory('Sales', function (MySales, $q) {
+appServices.factory('Sales', function ($http, $q) {
+    var _self = this;
     var sales = [];
-    var get = function (saleId) {
-        console.log("Sale List: ", sales);
-        return $q(function (resolve, reject) {
-            for (var i = 0; i < sales.length; i++) {
-                if (sales[i].id == saleId) {
-                    console.log('sale id: ', sales[i].id);
-                    resolve(sales[i]);
-                }
-            }
-            reject('sales is empty');
-        });
-    };
-    return {
-        all: function () {
-            return sales;
-        },
-        remove: function (sale) {
-            sales.splice(sales.indexOf(sale), 1);
-        },
-        get: get,
-        add: function (sale) {
-            MySales.add(sale);
-        },
-        set: function (saleList) {
-            sales = saleList;
+
+    var all = function () {
+        if (sales.length > 0) {
+            return $q.resolve(sales);
+        } else {
+            // TODO: get sales that are in the
+            // valid radius from user location
+            return $q(function (resolve, reject) {
+                $http.get('/sales').then(function (data, err) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        sales = data.data.data;
+                        resolve(data);
+                    }
+                });
+            });
         }
+    };
+
+    var get = function (saleId) {
+        console.log('get start');
+        return $q(function (resolve, reject) {
+            all().then(function (data, err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    console.log('saleId: ', saleId);
+                    console.log('all sales: ', sales);
+                    var id = parseInt(saleId);
+                    for (var i = 0; i < sales.length; i++) {
+                        console.log('sale -', sales[i]);
+                        if (sales[i].id == id) {
+                            resolve(sales[i]);
+                        }
+                    }
+                    reject('sales is empty');
+                }
+            });
+        })
+    };
+
+    var getSalesByIds = function (salesIds) {
+        console.log();
+        return $http.get('/sales/' + salesIds);
+    };
+
+    return {
+        all: all,
+        get: get,
+        getSalesByIds: getSalesByIds
     };
 });
 
-appServices.factory('MySales', function ($http, $q) {
-    var sales = [];
+appServices.factory('MySales', function ($http, $q, Sales, AuthService) {
+
+    var userDetails = AuthService.getUserModel();
+
     var add = function (sale) {
+        console.log('in service MySales');
+        var mySales = userDetails.sales;
+        AuthService.addSale(sale.id);
         return $q(function (resolve, reject) {
-            $http.post('/addToMySales', sale).then(function (data, err) {
+            console.log(userDetails.email);
+            var detailsJson = {
+                "email": userDetails.email,
+                "saleDetails": sale.id
+            };
+            console.log("Sale: ", detailsJson);
+            $http.post('/addToMySales', detailsJson).then(function (data, err) {
                 if (data) {
                     resolve(data);
                 } else {
@@ -145,9 +195,18 @@ appServices.factory('MySales', function ($http, $q) {
             });
         });
     };
-    var remove = function (sales) {
+
+    var remove = function (sale) {
+        AuthService.removeSale(sale.id);
+
+        var userModel = AuthService.getUserModel();
+        var salesArray = userModel.sales.split(',');
+        userModel.sales = salesArray.map(function(saleId){
+            return parseInt(saleId);
+        });
+
         return $q(function (resolve, reject) {
-            $http.post('/removeFromMySales', sale).then(function (data, err) {
+            $http.post('/removeFromMySales', userModel).then(function (data, err) {
                 if (data) {
                     resolve(data);
                 } else {
@@ -155,39 +214,118 @@ appServices.factory('MySales', function ($http, $q) {
                 }
             });
         });
+    };
 
-    }
-    var get = function (saleId) {
-        for (var i = 0; i < sales.length; i++) {
-            if (sales[i].id === parseInt(saleId)) {
-                return sales[i];
-            }
-        }
-        return null;
-    }
+    var getMySales = function (ids) {
+        userDetails = AuthService.getUserModel();
+        return Sales.getSalesByIds(ids);
+    };
 
-    /*          for (var i = 0; i < sales.length; i++) {
-     if (sales[i].id == saleId) {
-     console.log('sale id: ', sales[i].id);
-     resolve(sales[i]);
+    var all = function () {
+        return getMySales(userDetails.sales);
+    };
+    /*var all = function () {
+     return $q(function (resolve, reject) {
+     console.log('userDetails.email: ', userDetails.email);
+     $http.get('/mySalesList/' + userDetails.email).then(function (data, err) {
+     if (data) {
+     console.log("inside my sales service", data);
+     resolve(data);
+     } else {
+     reject("rejected");
      }
-     }*/
-
-
-    /*        });
-     sale.id = sales.length;
-     sales.push(sale);*/
+     });
+     });
+     };*/
 
     return {
-        all: function () {
-            return sales;
-        },
+        all: all,
         remove: remove,
-        get: get,
         add: add
     };
 });
 
+appServices.factory('Categories', function ($http, $q) {
+    return {
+        all: function () {
+            var dfd = $q.defer();
+            $http.get('/categories')
+                .success(function (categories) {
+                    dfd.resolve(categories.data);
+                })
+                .error(function (err) {
+                    dfd.reject(err);
+                });
+
+            return dfd.promise;
+        }
+    };
+});
+/*
+ appServices.factory('MySales', function ($http, $q, AuthService) {
+ var sales = [];
+ var userDetails = AuthService.getUserModel();
+ var add = function (sale) {
+ console.log('in service MySales');
+ return $q(function (resolve, reject) {
+ console.log(userDetails.email);
+ var detailsJson = {
+ "email": userDetails.email,
+ "saleDetails": sale
+ };
+ console.log("Sale: ", detailsJson);
+
+ $http.post('/addToMySales', detailsJson).then(function (data, err) {
+ if (data) {
+ resolve(data);
+ } else {
+ reject("rejected");
+ }
+ });
+ });
+ };
+
+ var remove = function (sales) {
+ return $q(function (resolve, reject) {
+ $http.post('/removeFromMySales', sale).then(function (data, err) {
+ if (data) {
+ resolve(data);
+ } else {
+ reject("rejected");
+ }
+ });
+ });
+
+ }
+ var get = function (saleId) {
+ for (var i = 0; i < sales.length; i++) {
+ if (sales[i].id === parseInt(saleId)) {
+ return sales[i];
+ }
+ }
+ return null;
+ }
+ var all = function () {
+ return $q(function (resolve, reject) {
+ $http.get('/mySalesList/' + userDetails.email).then(function (data, err) {
+ if (data) {
+ console.log("inside my sales service", data);
+ resolve(data);
+ } else {
+ reject("rejected");
+ }
+ });
+ });
+ }
+
+ return {
+ all: all,
+ remove: remove,
+ get: get,
+ add: add
+ };
+ });
+ */
 appServices.factory('GeoAlert', function ($q, Malls) {
     console.log('GeoAlert service instantiated');
     var interval;
@@ -293,15 +431,17 @@ appServices.factory('GeoAlert', function ($q, Malls) {
 appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER_ROLES, LOGIN_TYPE, AUTH_EVENTS) {
     var LOCAL_TOKEN_KEY = 'tokenKey';
     var LOCAL_CATEGORIES_KEY = 'categoriesKey';
+    var LOCAL_SALES_KEY = 'salesKey';
+    var SEPARATOR = ',';
     var userName = '';
     var isAuthenticated = false;
     var role = '';
     var authToken;
 
     function useCredentials(token) {
-        userName = token.split('.')[0];
+        userName = token.split(SEPARATOR)[0];
         isAuthenticated = true;
-        authToken = token.split('.')[1];
+        authToken = token.split(SEPARATOR)[1];
 
         if (userName == 'admin') {
             role = USER_ROLES.admin;
@@ -353,10 +493,12 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
         var email = userData.data.email || userData.data.data.email;
         userName = userData.data.FirstName || userData.data.data.FirstName;
         var categories = userData.data.Categories || userData.data.data.Categories;
-        var token = userName + '.' + email;
+        var sales = userData.data.Sales || userData.data.data.Sales;
+        var token = userName + SEPARATOR + email;
 
         window.localStorage.setItem(LOCAL_TOKEN_KEY, token);
         window.localStorage.setItem(LOCAL_CATEGORIES_KEY, categories);
+        window.localStorage.setItem(LOCAL_SALES_KEY, sales);
         useCredentials(token);
     };
 
@@ -368,6 +510,7 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
         var authToken = undefined;
         $http.defaults.headers.common['X-Auth-Token'] = undefined;
         window.localStorage.removeItem(LOCAL_TOKEN_KEY);
+        window.localStorage.removeItem(LOCAL_SALES_KEY);
     }
 
     function loginRedirect() {
@@ -376,7 +519,7 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
         if (userCategories && userCategories.length > 0) {
 
             //redirect to "main" page!
-            path = 'tab.malls';
+            path = 'tab.sales';
         } else {
 
             //redirect to "categories" page!
@@ -458,13 +601,13 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
     var getUserModel = function () {
         var token = window.localStorage.getItem(LOCAL_TOKEN_KEY);
         var categories = window.localStorage.getItem(LOCAL_CATEGORIES_KEY);
-
+        var sales = window.localStorage.getItem(LOCAL_SALES_KEY);
         if (!token) {
             return null;
         }
 
-        var name = token.split('.')[0];
-        var email = token.split('.')[1];
+        var name = token.split(SEPARATOR)[0];
+        var email = token.split(SEPARATOR)[1];
 
         if (categories)
             categories = categories.split(',');
@@ -472,10 +615,26 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
         return {
             name: name,
             email: email,
-            categories: categories
+            categories: categories,
+            sales: sales
         };
     };
 
+    var addSale = function (saleId) {
+        var userSales = window.localStorage.getItem(LOCAL_SALES_KEY);
+        userSales = userSales.concat(',' + saleId);
+        window.localStorage.setItem(LOCAL_SALES_KEY, userSales);
+    };
+
+    var removeSale = function (saleId) {
+        console.log("sale Id ", saleId)
+        var userSales = window.localStorage.getItem(LOCAL_SALES_KEY);
+        var indexOfSale = userSales.indexOf(saleId);
+
+        var userSalesArray = userSales.split(',');
+        userSalesArray.splice(indexOfSale,1);
+        window.localStorage.setItem(LOCAL_SALES_KEY, userSalesArray);
+    };
 // this will occur every time
 // that user will open the application
     loadUserCredentials();
@@ -493,7 +652,10 @@ appServices.service('AuthService', function ($rootScope, $state, $q, $http, USER
         },
         role: function () {
             return role;
-        }
+        },
+
+        addSale: addSale,
+        removeSale:removeSale
     };
 });
 

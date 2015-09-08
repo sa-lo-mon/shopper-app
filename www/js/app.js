@@ -96,9 +96,18 @@ app.config(function ($stateProvider, $urlRouterProvider) {
         .state('tab.sales', {
             url: '/sales',
             views: {
-                'tab-malls': {
+                'tab-sales': {
                     templateUrl: 'templates/tab-sales.html',
-                    controller: 'AllSalesCtrl'
+                    controller: 'SalesCtrl'
+                }
+            }
+        })
+        .state('tab.sale-detail', {
+            url: '/sales/:saleId',
+            views: {
+                'tab-sales': {
+                    templateUrl: 'templates/tab-sale-details.html',
+                    controller: 'SaleDetailsCtrl'
                 }
             }
         })
@@ -107,20 +116,10 @@ app.config(function ($stateProvider, $urlRouterProvider) {
             views: {
                 'tab-malls': {
                     templateUrl: 'templates/tab-malls-sales.html',
-                    controller: 'SalesCtrl'
+                    controller: 'MallSalesCtrl'
                 }
             }
         })
-        .state('tab.sale-details', {
-            url: '/malls/:mallId/:saleId',
-            views: {
-                'tab-malls': {
-                    templateUrl: 'templates/tab-malls-sales-details.html',
-                    controller: 'SalesCtrlDetails'
-                }
-            }
-        })
-
         .state('tab.my-sales', {
             url: '/my-sales',
             views: {
@@ -209,11 +208,12 @@ app.run(function ($ionicPlatform, $window, GeoAlert) {
         //herzeliah shopping center lat and long
         var lat = 32.164984;
         var long = 34.823771;
+
         function onConfirm(idx) {
-            console.log('button '+idx+' pressed');
+            console.log('button ' + idx + ' pressed');
         }
 
-        GeoAlert.begin(lat,long, function() {
+        GeoAlert.begin(lat, long, function () {
             console.log('TARGET');
             GeoAlert.end();
             /*        navigator.notification.confirm(

@@ -1,7 +1,9 @@
 <ion-view view-title="My Sales">
     <ion-content>
         <ion-list>
-            <ion-item class="item-remove-animate item-avatar item-icon-right" ng-repeat="sale in mysales" type="item-text-wrap" href="#/tab/malls/sales/{{sale.id}}">
+            <ion-item class="item-remove-animate item-avatar item-icon-right"
+                      ng-repeat="sale in mysales"
+                      type="item-text-wrap" href="#/tab/sales/{{sale.id}}">
                 <img ng-src="{{sale.face}}">
                 <h2>{{sale.name}}</h2>
                 <p>{{sale.details}}</p>
